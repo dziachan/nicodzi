@@ -1,25 +1,38 @@
 import { componentLabel, useStore } from '../store'
 import type { ComponentType } from '../types'
 
-const groups: { title: string; items: ComponentType[] }[] = [
-  { title: 'Struktur', items: ['topBar', 'bottomNav', 'card'] },
-  { title: 'Inhalt', items: ['label', 'image', 'icon', 'list'] },
-  { title: 'Eingabe', items: ['button', 'input', 'searchBar', 'toggle'] },
-]
-
-const icons: Record<ComponentType, string> = {
-  button: '▭',
-  input: '⌨',
-  label: 'H',
-  image: '🖼',
-  card: '▢',
-  list: '≣',
-  bottomNav: '⬓',
-  topBar: '⬒',
-  icon: '★',
-  toggle: '◖',
-  searchBar: '🔍',
+interface PItem {
+  type: ComponentType
+  label?: string
+  icon: string
+  size?: { w: number; h: number }
 }
+
+const groups: { title: string; items: PItem[] }[] = [
+  { title: 'Struktur', items: [
+    { type: 'topBar', icon: '⬒' },
+    { type: 'bottomNav', icon: '⬓' },
+    { type: 'card', icon: '▢' },
+  ] },
+  { title: 'Inhalt', items: [
+    { type: 'label', icon: 'H' },
+    { type: 'image', icon: '🖼' },
+    { type: 'icon', icon: '★' },
+    { type: 'list', icon: '≣' },
+  ] },
+  { title: 'Eingabe', items: [
+    { type: 'button', icon: '▭' },
+    { type: 'input', icon: '⌨' },
+    { type: 'searchBar', icon: '🔍' },
+    { type: 'toggle', icon: '◖' },
+  ] },
+  { title: 'Formen', items: [
+    { type: 'rectangle', label: 'Rechteck', icon: '▬' },
+    { type: 'rectangle', label: 'Quadrat', icon: '⬛', size: { w: 140, h: 140 } },
+    { type: 'ellipse', label: 'Kreis', icon: '⬤', size: { w: 140, h: 140 } },
+    { type: 'line', label: 'Linie', icon: '╱' },
+  ] },
+]
 
 export default function Palette() {
   const addNode = useStore((s) => s.addNode)
@@ -32,16 +45,19 @@ export default function Palette() {
         <div key={g.title} className="palette-group">
           <div className="group-label">{g.title}</div>
           <div className="palette-grid">
-            {g.items.map((type) => (
+            {g.items.map((it) => (
               <button
-                key={type}
+                key={it.label ?? it.type}
                 className="palette-item"
                 draggable
-                onDragStart={(e) => e.dataTransfer.setData('application/x-phorge-component', type)}
-                onClick={() => addNode(type)}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/x-phorge-component', it.type)
+                  if (it.size) e.dataTransfer.setData('application/x-phorge-size', JSON.stringify(it.size))
+                }}
+                onClick={() => addNode(it.type, undefined, it.size)}
               >
-                <span className="palette-icon">{icons[type]}</span>
-                <span>{componentLabel(type)}</span>
+                <span className="palette-icon">{it.icon}</span>
+                <span>{it.label ?? componentLabel(it.type)}</span>
               </button>
             ))}
           </div>

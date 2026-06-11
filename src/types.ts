@@ -10,6 +10,12 @@ export type ComponentType =
   | 'icon'
   | 'toggle'
   | 'searchBar'
+  | 'rectangle'
+  | 'ellipse'
+  | 'line'
+
+export const SHAPE_TYPES: ComponentType[] = ['rectangle', 'ellipse', 'line']
+export const isShape = (t: ComponentType) => SHAPE_TYPES.includes(t)
 
 export type Align = 'left' | 'center' | 'right'
 
@@ -28,6 +34,11 @@ export interface NodeProps {
   items?: string[] // list / bottomNav entries
   value?: boolean // toggle state
   navigateTo?: string | null // target screen id on tap
+  // Shape styling (rectangle / ellipse / line)
+  borderColor?: string
+  borderWidth?: number
+  opacity?: number // 0..1
+  rotation?: number // degrees
 }
 
 export interface ComponentNode {
@@ -57,6 +68,7 @@ export interface Screen {
   id: string
   name: string
   nodes: ComponentNode[]
+  background?: string // overrides the global background token for this screen
 }
 
 export interface Project {

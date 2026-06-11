@@ -185,6 +185,33 @@ export default function NodeView({ node, tokens }: Props) {
         </div>
       )
 
+    case 'rectangle':
+      return (
+        <div
+          style={{
+            ...fill,
+            background: p.bg ?? tokens.primary,
+            borderRadius: p.radius ?? 0,
+            border: p.borderWidth ? `${p.borderWidth}px solid ${p.borderColor ?? '#000'}` : undefined,
+          }}
+        />
+      )
+
+    case 'ellipse':
+      return (
+        <div
+          style={{
+            ...fill,
+            background: p.bg ?? tokens.secondary,
+            borderRadius: '50%',
+            border: p.borderWidth ? `${p.borderWidth}px solid ${p.borderColor ?? '#000'}` : undefined,
+          }}
+        />
+      )
+
+    case 'line':
+      return <div style={{ ...fill, background: p.bg ?? tokens.text, borderRadius: p.radius ?? 0 }} />
+
     case 'toggle':
       return (
         <div style={{ ...fill, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: p.textColor ?? tokens.text, fontSize: p.fontSize ?? 14, gap: 10 }}>

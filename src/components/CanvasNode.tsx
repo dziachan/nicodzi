@@ -1,7 +1,5 @@
 import { useRef } from 'react'
 import { useStore } from '../store'
-import { SCREEN_H, SCREEN_W } from '../constants'
-import NodeView from './NodeView'
 import type { ComponentNode } from '../types'
 
 interface Props {
@@ -11,10 +9,14 @@ interface Props {
   screenRef: React.RefObject<HTMLDivElement>
 }
 
-const MIN = 24
+const MIN = 8
 
+/**
+ * Transparent interaction box for a node. The visual is rendered separately in
+ * the (clipped) visual layer; this hit box lives in an unclipped layer so nodes
+ * that stick out past the screen edge stay selectable / draggable.
+ */
 export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
-  const tokens = useStore((s) => s.project.tokens)
   const selectNode = useStore((s) => s.selectNode)
   const updateNode = useStore((s) => s.updateNode)
   const deleteNode = useStore((s) => s.deleteNode)
@@ -51,12 +53,11 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
     const dx = p.x - d.px
     const dy = p.y - d.py
     if (d.mode === 'move') {
-      const x = Math.max(0, Math.min(SCREEN_W - d.start.w, d.start.x + dx))
-      const y = Math.max(0, Math.min(SCREEN_H - d.start.h, d.start.y + dy))
-      updateNode(node.id, { x, y }, 'none')
+      // No clamping: components may be placed freely, even past the screen edge.
+      updateNode(node.id, { x: Math.round(d.start.x + dx), y: Math.round(d.start.y + dy) }, 'none')
     } else {
-      const w = Math.max(MIN, Math.min(SCREEN_W - d.start.x, d.start.w + dx))
-      const h = Math.max(MIN, Math.min(SCREEN_H - d.start.y, d.start.h + dy))
+      const w = Math.max(MIN, Math.round(d.start.w + dx))
+      const h = Math.max(MIN, Math.round(d.start.h + dy))
       updateNode(node.id, { w, h }, 'none')
     }
   }
@@ -67,15 +68,15 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
     window.removeEventListener('pointerup', onUp)
   }
 
+  const rotation = node.props.rotation ?? 0
+
   return (
     <div
       className={`canvas-node ${selected ? 'selected' : ''}`}
-      style={{ left: node.x, top: node.y, width: node.w, height: node.h }}
+      style={{ left: node.x, top: node.y, width: node.w, height: node.h, transform: rotation ? `rotate(${rotation}deg)` : undefined }}
       onPointerDown={begin('move')}
       onClick={(e) => e.stopPropagation()}
     >
-      <NodeView node={node} tokens={tokens} />
-
       {targetName && <span className="nav-badge">→ {targetName}</span>}
       {node.type === 'image' && node.props.ocrStatus === 'pending' && <span className="ocr-badge">Text wird gelesen…</span>}
       {node.type === 'image' && node.props.ocrStatus === 'done' && node.props.ocrText && <span className="ocr-badge done">Text erkannt ✓</span>}

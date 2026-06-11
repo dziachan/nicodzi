@@ -13,11 +13,21 @@ function region(node: ComponentNode): string {
   return `${v}/${h}`
 }
 
-function describeNode(node: ComponentNode, project: Project): string {
+function describeNode(node: ComponentNode, project: Project, layer: number): string {
   const p = node.props
   const pos = `[${region(node)}, ${Math.round(node.w)}×${Math.round(node.h)}px]`
   const nav = p.navigateTo ? ` → bei Tap Navigation zu Screen "${screenName(project, p.navigateTo)}"` : ''
+  const layerInfo = `Ebene ${layer}`
+  const rot = p.rotation ? `, um ${p.rotation}° gedreht` : ''
+  const op = p.opacity != null && p.opacity < 1 ? `, Deckkraft ${Math.round(p.opacity * 100)}%` : ''
+  const border = p.borderWidth ? `, Rand ${p.borderWidth}px ${p.borderColor ?? '#000'}` : ''
   switch (node.type) {
+    case 'rectangle':
+      return `Gestaltungselement Rechteck ${pos} (${layerInfo}), Füllfarbe ${p.bg}, Eckenradius ${p.radius ?? 0}px${border}${op}${rot}.`
+    case 'ellipse':
+      return `Gestaltungselement Ellipse/Kreis ${pos} (${layerInfo}), Füllfarbe ${p.bg}${border}${op}${rot}.`
+    case 'line':
+      return `Gestaltungselement Linie ${pos} (${layerInfo}), Farbe ${p.bg}, Stärke ${Math.round(node.h)}px${rot}.`
     case 'topBar':
       return `Top-Bar/Header ${pos} mit Titel "${p.text}".`
     case 'bottomNav':
@@ -104,12 +114,15 @@ function functionalitySection(inv: Inventory): string[] {
 
 function screenSection(screen: Screen, index: number, project: Project): string[] {
   const lines = [`### ${index + 1}. Screen: „${screen.name}"`]
+  if (screen.background) lines.push(`Hintergrundfarbe dieses Screens: \`${screen.background}\` (überschreibt den globalen Wert).`)
   if (screen.nodes.length === 0) {
     lines.push('_(leer)_', '')
     return lines
   }
+  // Layer index in the original array: 0 = hinten, höher = weiter vorne.
+  const layerOf = new Map(screen.nodes.map((n, i) => [n.id, i]))
   const ordered = [...screen.nodes].sort((a, b) => a.y - b.y)
-  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project)}`))
+  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project, layerOf.get(n.id) ?? 0)}`))
   lines.push('')
   return lines
 }

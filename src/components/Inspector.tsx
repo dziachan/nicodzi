@@ -1,6 +1,6 @@
-import { useStore } from '../store'
+import { componentLabel, useStore } from '../store'
 import { recognizeText } from '../ocr'
-import type { ComponentNode } from '../types'
+import { isShape, type ComponentNode } from '../types'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -15,6 +15,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
   const setProps = useStore((s) => s.updateNodeProps)
   const setNode = useStore((s) => s.updateNode)
   const deleteNode = useStore((s) => s.deleteNode)
+  const reorderNode = useStore((s) => s.reorderNode)
   const screens = useStore((s) => s.project.screens)
   const activeScreenId = useStore((s) => s.activeScreenId)
   const tokens = useStore((s) => s.project.tokens)
@@ -22,6 +23,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
   const p = node.props
   const sp = (patch: Partial<ComponentNode['props']>) => setProps(node.id, patch)
   const has = (...t: ComponentNode['type'][]) => t.includes(node.type)
+  const shape = isShape(node.type)
 
   const rerunOcr = () => {
     if (!p.src) return
@@ -31,7 +33,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
       .catch(() => sp({ ocrStatus: 'error' }))
   }
 
-  const colorField = (label: string, key: 'bg' | 'textColor', fallback: string) => (
+  const colorField = (label: string, key: 'bg' | 'textColor' | 'borderColor', fallback: string) => (
     <Field label={label}>
       <div className="color-row">
         <input type="color" value={p[key] ?? fallback} onChange={(e) => sp({ [key]: e.target.value })} />
@@ -40,9 +42,11 @@ export default function Inspector({ node }: { node: ComponentNode }) {
     </Field>
   )
 
+  const roundMax = Math.round(Math.min(node.w, node.h) / 2)
+
   return (
     <div className="inspector-body">
-      <div className="inspector-group">{node.type}</div>
+      <div className="inspector-group">{componentLabel(node.type)}</div>
 
       {has('button', 'label', 'topBar', 'card', 'toggle') && (
         <Field label="Text">
@@ -79,17 +83,35 @@ export default function Inspector({ node }: { node: ComponentNode }) {
           {p.ocrStatus === 'pending' && <div className="hint">Text im Bild wird gelesen…</div>}
           {p.ocrStatus === 'error' && <div className="hint" style={{ color: '#f87171' }}>OCR fehlgeschlagen (offline?). Erneut versuchen.</div>}
           <Field label="Im Bild gefundener Text (editierbar)">
-            <textarea
-              rows={5}
-              placeholder="(kein Text erkannt)"
-              value={p.ocrText ?? ''}
-              onChange={(e) => sp({ ocrText: e.target.value })}
-            />
+            <textarea rows={5} placeholder="(kein Text erkannt)" value={p.ocrText ?? ''} onChange={(e) => sp({ ocrText: e.target.value })} />
           </Field>
           <div className="hint">Dieser Text wird in den Export-Prompt übernommen, damit das UI nachgebaut werden kann.</div>
           <button className="btn small" onClick={rerunOcr} disabled={p.ocrStatus === 'pending'}>
             {p.ocrStatus === 'pending' ? 'Wird gelesen…' : 'Text neu erkennen'}
           </button>
+        </>
+      )}
+
+      {/* ---- Shape styling ---- */}
+      {shape && (
+        <>
+          <div className="inspector-group">Form</div>
+          {colorField('Füllfarbe', 'bg', tokens.primary)}
+          <Field label={`Randstärke (${p.borderWidth ?? 0}px)`}>
+            <input type="range" min={0} max={20} value={p.borderWidth ?? 0} onChange={(e) => sp({ borderWidth: +e.target.value })} />
+          </Field>
+          {(p.borderWidth ?? 0) > 0 && colorField('Randfarbe', 'borderColor', '#000000')}
+          {!has('ellipse') && (
+            <Field label={`Eckenradius (${p.radius ?? 0}px)`}>
+              <input type="range" min={0} max={Math.max(2, roundMax)} value={Math.min(p.radius ?? 0, roundMax)} onChange={(e) => sp({ radius: +e.target.value })} />
+            </Field>
+          )}
+          <Field label={`Deckkraft (${Math.round((p.opacity ?? 1) * 100)}%)`}>
+            <input type="range" min={0} max={100} value={Math.round((p.opacity ?? 1) * 100)} onChange={(e) => sp({ opacity: +e.target.value / 100 })} />
+          </Field>
+          <Field label={`Drehung (${p.rotation ?? 0}°)`}>
+            <input type="range" min={-180} max={180} value={p.rotation ?? 0} onChange={(e) => sp({ rotation: +e.target.value })} />
+          </Field>
         </>
       )}
 
@@ -107,26 +129,42 @@ export default function Inspector({ node }: { node: ComponentNode }) {
           </select>
         </Field>
       )}
-      {!has('icon', 'bottomNav') && (
+      {!has('icon', 'bottomNav') && !shape && (
         <Field label={`Eckenradius (${p.radius ?? tokens.radius}px)`}>
           <input type="range" min={0} max={40} value={p.radius ?? tokens.radius} onChange={(e) => sp({ radius: +e.target.value })} />
         </Field>
       )}
 
-      {colorField('Hintergrund/Akzent', 'bg', tokens.primary)}
-      {colorField('Textfarbe', 'textColor', tokens.text)}
+      {!shape && (
+        <>
+          {colorField('Hintergrund/Akzent', 'bg', tokens.primary)}
+          {colorField('Textfarbe', 'textColor', tokens.text)}
+        </>
+      )}
 
-      <div className="inspector-group">Navigation</div>
-      <Field label="Bei Tap zu Screen">
-        <select value={p.navigateTo ?? ''} onChange={(e) => sp({ navigateTo: e.target.value || null })}>
-          <option value="">— keine —</option>
-          {screens
-            .filter((s) => s.id !== activeScreenId)
-            .map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-        </select>
-      </Field>
+      {!shape && (
+        <>
+          <div className="inspector-group">Navigation</div>
+          <Field label="Bei Tap zu Screen">
+            <select value={p.navigateTo ?? ''} onChange={(e) => sp({ navigateTo: e.target.value || null })}>
+              <option value="">— keine —</option>
+              {screens
+                .filter((s) => s.id !== activeScreenId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+            </select>
+          </Field>
+        </>
+      )}
+
+      <div className="inspector-group">Ebene</div>
+      <div className="layer-row">
+        <button className="btn" onClick={() => reorderNode(node.id, 'front')} title="Ganz nach vorne">⤒</button>
+        <button className="btn" onClick={() => reorderNode(node.id, 'forward')} title="Eine Ebene nach vorne">↑</button>
+        <button className="btn" onClick={() => reorderNode(node.id, 'backward')} title="Eine Ebene nach hinten">↓</button>
+        <button className="btn" onClick={() => reorderNode(node.id, 'back')} title="Ganz nach hinten">⤓</button>
+      </div>
 
       <div className="inspector-group">Position & Größe</div>
       <div className="grid2">

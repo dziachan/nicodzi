@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useStore } from '../store'
 import { FRAME_H, FRAME_W, SCREEN_H, SCREEN_W } from '../constants'
 import CanvasNode from './CanvasNode'
+import NodeView from './NodeView'
 import { recognizeText } from '../ocr'
 import type { ComponentType } from '../types'
 
@@ -55,7 +56,10 @@ export default function PhoneEditor() {
       return
     }
     const type = e.dataTransfer.getData('application/x-phorge-component') as ComponentType
-    if (type) addNode(type, at)
+    if (type) {
+      const sizeRaw = e.dataTransfer.getData('application/x-phorge-size')
+      addNode(type, at, sizeRaw ? JSON.parse(sizeRaw) : undefined)
+    }
   }
 
   return (
@@ -63,10 +67,34 @@ export default function PhoneEditor() {
       <div className="frame-reserve" style={{ width: FRAME_W * zoom, height: FRAME_H * zoom }}>
         <div className={`phone-frame device-${device}`} style={{ transform: `scale(${zoom})` }}>
           <div className={`device-cutout device-${device}`} />
+
+          {/* Visual layer: clipped to the (rounded) screen edges */}
+          <div
+            className={`phone-screen ${over ? 'drag-over' : ''}`}
+            style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `${tokens.fontFamily}, system-ui, sans-serif`, fontSize: tokens.baseFontSize }}
+          >
+            {screen.nodes.length === 0 && (
+              <div className="screen-empty" style={{ color: `${tokens.text}88` }}>
+                Komponente per Klick hinzufügen<br />oder hierher ziehen
+              </div>
+            )}
+            {screen.nodes.map((n) => (
+              <div
+                key={n.id}
+                className="node-visual"
+                style={{ left: n.x, top: n.y, width: n.w, height: n.h, opacity: n.props.opacity ?? 1, transform: n.props.rotation ? `rotate(${n.props.rotation}deg)` : undefined }}
+              >
+                <NodeView node={n} tokens={tokens} />
+              </div>
+            ))}
+          </div>
+
+          {/* Interaction layer: sits over the screen but is NOT clipped, so nodes
+              that stick out past the edge stay selectable and draggable. */}
           <div
             ref={screenRef}
-            className={`phone-screen ${over ? 'drag-over' : ''}`}
-            style={{ width: SCREEN_W, height: SCREEN_H, background: tokens.background, fontFamily: `${tokens.fontFamily}, system-ui, sans-serif`, fontSize: tokens.baseFontSize }}
+            className="interact-overlay"
+            style={{ width: SCREEN_W, height: SCREEN_H }}
             onClick={(e) => {
               e.stopPropagation()
               selectNode(null)
@@ -80,11 +108,6 @@ export default function PhoneEditor() {
             }}
             onDrop={onDrop}
           >
-            {screen.nodes.length === 0 && (
-              <div className="screen-empty" style={{ color: `${tokens.text}88` }}>
-                Komponente per Klick hinzufügen<br />oder hierher ziehen
-              </div>
-            )}
             {screen.nodes.map((n) => (
               <CanvasNode key={n.id} node={n} selected={n.id === selectedNodeId} zoom={zoom} screenRef={screenRef} />
             ))}

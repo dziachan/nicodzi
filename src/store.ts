@@ -20,6 +20,9 @@ const labels: Record<ComponentType, string> = {
   icon: 'Icon',
   toggle: 'Toggle',
   searchBar: 'Suchleiste',
+  rectangle: 'Rechteck',
+  ellipse: 'Ellipse',
+  line: 'Linie',
 }
 export const componentLabel = (t: ComponentType) => labels[t]
 
@@ -49,6 +52,12 @@ export function defaultNode(type: ComponentType): ComponentNode {
       return { ...base, x: 140, y: 150, w: 40, h: 40, props: { icon: '★' } }
     case 'toggle':
       return { ...base, x: 40, y: 160, w: 240, h: 40, props: { text: 'Option aktivieren', value: true } }
+    case 'rectangle':
+      return { ...base, x: 60, y: 200, w: 200, h: 120, props: { bg: '#6366f1', radius: 12, borderWidth: 0, borderColor: '#000000', opacity: 1, rotation: 0 } }
+    case 'ellipse':
+      return { ...base, x: 90, y: 200, w: 140, h: 140, props: { bg: '#ec4899', radius: 0, borderWidth: 0, borderColor: '#000000', opacity: 1, rotation: 0 } }
+    case 'line':
+      return { ...base, x: 60, y: 300, w: 200, h: 4, props: { bg: '#111827', radius: 2, opacity: 1, rotation: 0 } }
     default:
       return { ...base, x: 60, y: 200, w: 200, h: 48, props: {} }
   }
@@ -132,8 +141,10 @@ interface StoreState {
   duplicateScreen: (id: string) => void
   deleteScreen: (id: string) => void
   renameScreen: (id: string, name: string) => void
+  updateScreen: (id: string, patch: Partial<Screen>) => void
 
-  addNode: (type: ComponentType, at?: { x: number; y: number }) => void
+  addNode: (type: ComponentType, at?: { x: number; y: number }, size?: { w: number; h: number }) => void
+  reorderNode: (id: string, where: 'front' | 'back' | 'forward' | 'backward') => void
   addImageNode: (src: string, w: number, h: number, at: { x: number; y: number }) => string
   updateNode: (id: string, patch: Partial<ComponentNode>, history?: HistoryMode) => void
   updateNodeProps: (id: string, patch: Partial<ComponentNode['props']>, history?: HistoryMode) => void
@@ -250,12 +261,19 @@ export const useStore = create<StoreState>((set, get) => {
 
     renameScreen: (id, name) => apply((p) => mapScreen(p, id, (s) => ({ ...s, name })), 'coalesce'),
 
-    addNode: (type, at) =>
+    updateScreen: (id, patch) => apply((p) => mapScreen(p, id, (s) => ({ ...s, ...patch })), 'coalesce'),
+
+    addNode: (type, at, size) =>
       set((s) => {
         const node = defaultNode(type)
+        if (size) {
+          node.w = size.w
+          node.h = size.h
+        }
+        // Free placement: position is centered on the drop point, not clamped to the screen.
         if (at) {
-          node.x = Math.max(0, Math.min(SCREEN_W - node.w, at.x - node.w / 2))
-          node.y = Math.max(0, Math.min(SCREEN_H - node.h, at.y - node.h / 2))
+          node.x = Math.round(at.x - node.w / 2)
+          node.y = Math.round(at.y - node.h / 2)
         }
         const project = mapScreen(s.project, s.activeScreenId, (sc) => ({ ...sc, nodes: [...sc.nodes, node] }))
         return {
@@ -267,12 +285,27 @@ export const useStore = create<StoreState>((set, get) => {
         }
       }),
 
+    reorderNode: (id, where) =>
+      apply((p) => {
+        return mapScreen(p, get().activeScreenId, (sc) => {
+          const idx = sc.nodes.findIndex((n) => n.id === id)
+          if (idx < 0) return sc
+          const nodes = [...sc.nodes]
+          const [node] = nodes.splice(idx, 1)
+          if (where === 'front') nodes.push(node)
+          else if (where === 'back') nodes.unshift(node)
+          else if (where === 'forward') nodes.splice(Math.min(nodes.length, idx + 1), 0, node)
+          else nodes.splice(Math.max(0, idx - 1), 0, node)
+          return { ...sc, nodes }
+        })
+      }, 'push'),
+
     addImageNode: (src, w, h, at) => {
       const node = defaultNode('image')
       node.w = w
       node.h = h
-      node.x = Math.max(0, Math.min(SCREEN_W - w, at.x - w / 2))
-      node.y = Math.max(0, Math.min(SCREEN_H - h, at.y - h / 2))
+      node.x = Math.round(at.x - w / 2)
+      node.y = Math.round(at.y - h / 2)
       node.props = { src, ocrStatus: 'pending' }
       set((s) => ({
         project: mapScreen(s.project, s.activeScreenId, (sc) => ({ ...sc, nodes: [...sc.nodes, node] })),

@@ -6,6 +6,7 @@ import PhoneEditor from './components/PhoneEditor'
 import ScreenThumbnails from './components/ScreenThumbnails'
 import Inspector from './components/Inspector'
 import TokensPanel from './components/TokensPanel'
+import ScreenSettings from './components/ScreenSettings'
 import PromptModal from './components/PromptModal'
 
 export default function App() {
@@ -43,8 +44,15 @@ export default function App() {
           <ScreenThumbnails />
         </div>
         <aside className="panel right">
-          <div className="panel-title">{selected ? 'Komponente' : 'Design & Tokens'}</div>
-          {selected ? <Inspector node={selected} /> : <TokensPanel />}
+          <div className="panel-title">{selected ? 'Komponente' : 'Screen & Design'}</div>
+          {selected ? (
+            <Inspector node={selected} />
+          ) : (
+            <>
+              <ScreenSettings />
+              <TokensPanel />
+            </>
+          )}
         </aside>
       </main>
       {showPrompt && <PromptModal onClose={() => setShowPrompt(false)} />}

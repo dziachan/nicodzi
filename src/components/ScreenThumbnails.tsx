@@ -19,9 +19,12 @@ function Thumb({ screen, active }: { screen: Screen; active: boolean }) {
     <div className={`thumb ${active ? 'active' : ''}`}>
       <div className="thumb-frame" style={{ width: FRAME_W * SCALE, height: FRAME_H * SCALE }} onClick={() => setActiveScreen(screen.id)}>
         <div className={`phone-frame device-${device}`} style={{ transform: `scale(${SCALE})` }}>
-          <div className="phone-screen" style={{ width: SCREEN_W, height: SCREEN_H, background: tokens.background, fontFamily: `${tokens.fontFamily}, system-ui` }}>
+          <div className="phone-screen" style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `${tokens.fontFamily}, system-ui` }}>
             {screen.nodes.map((n) => (
-              <div key={n.id} style={{ position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, pointerEvents: 'none' }}>
+              <div
+                key={n.id}
+                style={{ position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, pointerEvents: 'none', opacity: n.props.opacity ?? 1, transform: n.props.rotation ? `rotate(${n.props.rotation}deg)` : undefined }}
+              >
                 <NodeView node={n} tokens={tokens} />
               </div>
             ))}
