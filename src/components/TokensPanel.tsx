@@ -58,7 +58,7 @@ export default function TokensPanel() {
       <Field label="Schriftart">
         <select value={t.fontFamily} onChange={(e) => setTokens({ fontFamily: e.target.value })}>
           {FONT_OPTIONS.map((f) => (
-            <option key={f} value={f}>{f}</option>
+            <option key={f} value={f} style={{ fontFamily: `'${f}'` }}>{f}</option>
           ))}
         </select>
       </Field>

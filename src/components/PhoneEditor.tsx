@@ -67,7 +67,7 @@ export default function PhoneEditor() {
           {/* Visual layer: clipped to the (rounded) screen edges */}
           <div
             className={`phone-screen ${over ? 'drag-over' : ''}`}
-            style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `${tokens.fontFamily}, system-ui, sans-serif`, fontSize: tokens.baseFontSize }}
+            style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `'${tokens.fontFamily}', system-ui, sans-serif`, fontSize: tokens.baseFontSize }}
           >
             {screen.nodes.length === 0 && (
               <div className="screen-empty" style={{ color: `${tokens.text}88` }}>

@@ -26,7 +26,7 @@ function Thumb({ screen, active, registerFrame }: { screen: Screen; active: bool
         onClick={() => setActiveScreen(screen.id)}
       >
         <div className={`phone-frame device-${device}`} style={{ transform: `scale(${SCALE})` }}>
-          <div className="phone-screen" style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `${tokens.fontFamily}, system-ui` }}>
+          <div className="phone-screen" style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `'${tokens.fontFamily}', system-ui` }}>
             {screen.nodes.map((n) => (
               <div
                 key={n.id}
