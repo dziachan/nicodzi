@@ -30,8 +30,17 @@ function describeNode(node: ComponentNode, project: Project): string {
       return `Suchleiste ${pos}, Platzhalter "${p.placeholder}".`
     case 'label':
       return `Überschrift/Label ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).`
-    case 'image':
-      return `Bild${p.src ? ' (vom Nutzer hochgeladen)' : '-Platzhalter'} ${pos}.`
+    case 'image': {
+      if (!p.src) return `Bild-Platzhalter ${pos}.`
+      const ocr = p.ocrText?.trim()
+      if (ocr) {
+        return (
+          `Vom Nutzer hochgeladenes UI-Mockup ${pos} — verwende es als visuelle Vorlage und baue das gezeigte UI nach. ` +
+          `Im Bild per OCR erkannter Text/Inhalt:\n\n\`\`\`\n${ocr}\n\`\`\``
+        )
+      }
+      return `Vom Nutzer hochgeladenes UI-Mockup ${pos} — als visuelle Vorlage nachbauen.`
+    }
     case 'card':
       return `Card ${pos} mit Titel "${p.text}".`
     case 'list':
@@ -163,11 +172,17 @@ export function generatePrompt(project: Project): string {
   out.push(...functionalitySection(inv))
   out.push('')
 
+  const hasMockups = project.screens.some((s) => s.nodes.some((n) => n.type === 'image' && n.props.src))
+
   out.push('## Technische Vorgaben')
   out.push('')
   out.push('- Saubere, komponentenbasierte Umsetzung; responsives, mobil-zentriertes Layout.')
   out.push('- Verwende die Design-Tokens als zentrale CSS-Variablen / Theme-Konstanten.')
   out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px), sanfte Übergänge.')
+  if (hasMockups)
+    out.push(
+      '- Hochgeladene UI-Mockups sind verbindliche Design-Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',
+    )
   out.push('')
 
   out.push('## Abschluss')

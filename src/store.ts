@@ -134,9 +134,10 @@ interface StoreState {
   renameScreen: (id: string, name: string) => void
 
   addNode: (type: ComponentType, at?: { x: number; y: number }) => void
-  addImageNode: (src: string, w: number, h: number, at: { x: number; y: number }) => void
+  addImageNode: (src: string, w: number, h: number, at: { x: number; y: number }) => string
   updateNode: (id: string, patch: Partial<ComponentNode>, history?: HistoryMode) => void
   updateNodeProps: (id: string, patch: Partial<ComponentNode['props']>, history?: HistoryMode) => void
+  patchNodeProps: (id: string, patch: Partial<ComponentNode['props']>) => void
   deleteNode: (id: string) => void
 
   checkpoint: () => void
@@ -266,23 +267,22 @@ export const useStore = create<StoreState>((set, get) => {
         }
       }),
 
-    addImageNode: (src, w, h, at) =>
-      set((s) => {
-        const node = defaultNode('image')
-        node.w = w
-        node.h = h
-        node.x = Math.max(0, Math.min(SCREEN_W - w, at.x - w / 2))
-        node.y = Math.max(0, Math.min(SCREEN_H - h, at.y - h / 2))
-        node.props = { src }
-        const project = mapScreen(s.project, s.activeScreenId, (sc) => ({ ...sc, nodes: [...sc.nodes, node] }))
-        return {
-          project,
-          selectedNodeId: node.id,
-          past: [...s.past, s.project].slice(-HISTORY_LIMIT),
-          future: [],
-          _lastEdit: Date.now(),
-        }
-      }),
+    addImageNode: (src, w, h, at) => {
+      const node = defaultNode('image')
+      node.w = w
+      node.h = h
+      node.x = Math.max(0, Math.min(SCREEN_W - w, at.x - w / 2))
+      node.y = Math.max(0, Math.min(SCREEN_H - h, at.y - h / 2))
+      node.props = { src, ocrStatus: 'pending' }
+      set((s) => ({
+        project: mapScreen(s.project, s.activeScreenId, (sc) => ({ ...sc, nodes: [...sc.nodes, node] })),
+        selectedNodeId: node.id,
+        past: [...s.past, s.project].slice(-HISTORY_LIMIT),
+        future: [],
+        _lastEdit: Date.now(),
+      }))
+      return node.id
+    },
 
     updateNode: (id, patch, history = 'coalesce') =>
       apply(
@@ -303,6 +303,19 @@ export const useStore = create<StoreState>((set, get) => {
           })),
         history,
       ),
+
+    // Updates a node's props on whichever screen it lives — used for async OCR
+    // results, which may land after the user switched screens. No history entry.
+    patchNodeProps: (id, patch) =>
+      set((s) => ({
+        project: {
+          ...s.project,
+          screens: s.project.screens.map((sc) => ({
+            ...sc,
+            nodes: sc.nodes.map((n) => (n.id === id ? { ...n, props: { ...n.props, ...patch } } : n)),
+          })),
+        },
+      })),
 
     deleteNode: (id) =>
       set((s) => {

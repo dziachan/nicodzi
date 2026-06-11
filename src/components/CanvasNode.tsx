@@ -77,6 +77,8 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
       <NodeView node={node} tokens={tokens} />
 
       {targetName && <span className="nav-badge">→ {targetName}</span>}
+      {node.type === 'image' && node.props.ocrStatus === 'pending' && <span className="ocr-badge">Text wird gelesen…</span>}
+      {node.type === 'image' && node.props.ocrStatus === 'done' && node.props.ocrText && <span className="ocr-badge done">Text erkannt ✓</span>}
 
       {selected && (
         <>

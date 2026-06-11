@@ -23,6 +23,8 @@ export interface NodeProps {
   align?: Align
   icon?: string
   src?: string // data URL for uploaded images
+  ocrText?: string // text recognized in an uploaded image (OCR)
+  ocrStatus?: 'pending' | 'done' | 'error'
   items?: string[] // list / bottomNav entries
   value?: boolean // toggle state
   navigateTo?: string | null // target screen id on tap
