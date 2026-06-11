@@ -88,6 +88,8 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 .canvas-node { position: absolute; cursor: grab; outline: 1.5px solid transparent; }
 .canvas-node:hover { outline-color: #6366f188; }
 .canvas-node.selected { outline: 1.5px solid var(--primary); }
+/* Slightly enlarge the clickable area so thin shapes (e.g. lines) stay grabbable */
+.canvas-node::before { content: ''; position: absolute; inset: -5px; }
 .node-resize { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; border-radius: 3px; background: var(--primary); border: 2px solid #fff; cursor: nwse-resize; z-index: 6; }
 .node-delete { position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: #fff; border: 2px solid #fff; font-size: 11px; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0; z-index: 6; }
 .nav-badge { position: absolute; top: -9px; left: 6px; background: var(--primary); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
@@ -127,6 +129,8 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 .field-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; }
 .field-textarea:focus { outline: none; border-color: var(--primary); }
 .ocr-preview { margin: 0; max-height: 140px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.5; color: #d7d7e0; white-space: pre-wrap; word-break: break-word; }
+.progress { height: 6px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #7c3aed); transition: width .2s; }
 .preset-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .preset { flex: 1 1 45%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 6px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .preset:hover { border-color: var(--primary); }

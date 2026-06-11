@@ -12,14 +12,16 @@ export default function ImageOcr({ node }: { node: ComponentNode }) {
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [draft, setDraft] = useState('')
+  const [progress, setProgress] = useState(0)
 
   const committed = node.props.ocrText?.trim()
 
   const run = () => {
     const src = node.props.src
     if (!src) return
+    setProgress(0)
     setPhase('running')
-    recognizeImage(src)
+    recognizeImage(src, (p) => setProgress(p))
       .then((res) => {
         if (res.usable) {
           setDraft(res.text)
@@ -73,7 +75,12 @@ export default function ImageOcr({ node }: { node: ComponentNode }) {
         <button className="btn small" onClick={run}>Text im Bild erkennen</button>
       )}
 
-      {phase === 'running' && <div className="hint">Text wird erkannt… (erstes Mal etwas langsamer)</div>}
+      {phase === 'running' && (
+        <>
+          <div className="hint">Text wird erkannt… {Math.round(progress * 100)}% (erstes Mal etwas langsamer)</div>
+          <div className="progress"><div className="progress-fill" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
+        </>
+      )}
 
       {phase === 'error' && (
         <>

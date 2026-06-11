@@ -5,9 +5,17 @@ import { createWorker, type Worker } from 'tesseract.js'
 // is the slowest; subsequent ones are fast.
 let workerPromise: Promise<Worker> | null = null
 
+// The worker's logger is global, so route progress to whichever recognition
+// is currently running.
+let activeProgress: ((p: number) => void) | null = null
+
 function getWorker(): Promise<Worker> {
   if (!workerPromise) {
-    workerPromise = createWorker('deu+eng')
+    workerPromise = createWorker('deu+eng', 1, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') activeProgress?.(m.progress)
+      },
+    })
   }
   return workerPromise
 }
@@ -45,11 +53,19 @@ function isUsable(text: string, confidence: number): boolean {
   return realWords.length >= 1
 }
 
-/** Runs OCR on an image (data URL) and assesses the result quality. */
-export async function recognizeImage(image: string): Promise<OcrResult> {
+/**
+ * Runs OCR on an image (data URL), reports progress (0..1) and assesses the
+ * result quality.
+ */
+export async function recognizeImage(image: string, onProgress?: (p: number) => void): Promise<OcrResult> {
   const worker = await getWorker()
-  const { data } = await worker.recognize(image)
-  const text = data.text.replace(/\n{3,}/g, '\n\n').trim()
-  const confidence = Math.round(data.confidence ?? 0)
-  return { text, confidence, usable: isUsable(text, confidence) }
+  activeProgress = onProgress ?? null
+  try {
+    const { data } = await worker.recognize(image)
+    const text = data.text.replace(/\n{3,}/g, '\n\n').trim()
+    const confidence = Math.round(data.confidence ?? 0)
+    return { text, confidence, usable: isUsable(text, confidence) }
+  } finally {
+    activeProgress = null
+  }
 }

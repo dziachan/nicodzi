@@ -15,24 +15,32 @@ export default function App() {
   const screen = useStore((s) => s.activeScreen())
   const undo = useStore((s) => s.undo)
   const redo = useStore((s) => s.redo)
+  const deleteNode = useStore((s) => s.deleteNode)
+  const selectNode = useStore((s) => s.selectNode)
   const selected = screen.nodes.find((n) => n.id === selectedNodeId)
 
-  // Undo / redo keyboard shortcuts (ignored while typing in fields).
+  // Keyboard shortcuts (ignored while typing in fields).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement
       if (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName)) return
+      const id = useStore.getState().selectedNodeId
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         e.shiftKey ? redo() : undo()
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault()
         redo()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && id) {
+        e.preventDefault()
+        deleteNode(id)
+      } else if (e.key === 'Escape') {
+        selectNode(null)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo])
+  }, [undo, redo, deleteNode, selectNode])
 
   return (
     <div className="app">
