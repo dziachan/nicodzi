@@ -89,12 +89,26 @@ export function generatePrompt(project: Project): string {
       lines.push('')
       return
     }
-    lines.push('Elemente von oben nach unten:')
-    lines.push('')
-    screen.elements.forEach((el, idx) => {
-      lines.push(`${idx + 1}. ${describeElement(el)}`)
-    })
-    lines.push('')
+    if (screen.elements.length > 0) {
+      lines.push('Elemente von oben nach unten:')
+      lines.push('')
+      screen.elements.forEach((el, idx) => {
+        lines.push(`${idx + 1}. ${describeElement(el)}`)
+      })
+      lines.push('')
+    }
+    if (screen.images.length > 0) {
+      lines.push(`Freigestellte Bild-Assets (${screen.images.length}), frei positioniert:`)
+      lines.push('')
+      screen.images.forEach((im, idx) => {
+        const cx = Math.round(im.x + im.width / 2)
+        const cy = Math.round(im.y + im.height / 2)
+        lines.push(
+          `${idx + 1}. "${im.name}" — ca. ${Math.round(im.width)}×${Math.round(im.height)}px, Mittelpunkt ungefähr bei (${cx}, ${cy}) im Screen (~300px breit)${im.rotation ? `, um ${im.rotation}° gedreht` : ''}.`,
+        )
+      })
+      lines.push('')
+    }
   })
 
   lines.push('## Umsetzungs-Hinweise')

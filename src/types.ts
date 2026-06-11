@@ -48,10 +48,23 @@ export interface Theme {
   style: 'minimal' | 'glass' | 'neumorph' | 'bold' | 'playful'
 }
 
+/** A free-form image dropped onto the canvas (moveable, resizable, rotatable). */
+export interface ImageLayer {
+  id: string
+  src: string // data URL
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number // degrees
+}
+
 export interface Screen {
   id: string
   name: string
   elements: DesignElement[]
+  images: ImageLayer[]
 }
 
 export interface Project {

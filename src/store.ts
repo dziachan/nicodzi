@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { DesignElement, ElementType, Project, Screen, Theme } from './types'
+import type { DesignElement, ElementType, ImageLayer, Project, Screen, Theme } from './types'
 
 const uid = () => Math.random().toString(36).slice(2, 9)
 
@@ -72,6 +72,15 @@ function starterScreen(): Screen {
       { id: uid(), type: 'image', props: defaultProps('image') },
       { id: uid(), type: 'button', props: defaultProps('button') },
     ],
+    images: [],
+  }
+}
+
+/** Ensures every screen has the fields the current model expects (for imports). */
+function normalizeProject(p: Project): Project {
+  return {
+    ...p,
+    screens: p.screens.map((s) => ({ ...s, elements: s.elements ?? [], images: s.images ?? [] })),
   }
 }
 
@@ -90,12 +99,14 @@ interface StoreState {
   project: Project
   activeScreenId: string
   selectedId: string | null
+  selectedImageId: string | null
   // selectors
   activeScreen: () => Screen
   // mutations
   setProject: (patch: Partial<Project>) => void
   setTheme: (patch: Partial<Theme>) => void
   select: (id: string | null) => void
+  selectImage: (id: string | null) => void
   setActiveScreen: (id: string) => void
   addScreen: () => void
   renameScreen: (id: string, name: string) => void
@@ -104,6 +115,10 @@ interface StoreState {
   updateElement: (id: string, patch: Partial<DesignElement['props']>) => void
   deleteElement: (id: string) => void
   moveElement: (id: string, dir: -1 | 1) => void
+  addImage: (img: Omit<ImageLayer, 'id'>) => void
+  updateImage: (id: string, patch: Partial<ImageLayer>) => void
+  deleteImage: (id: string) => void
+  bringImageToFront: (id: string) => void
   loadProject: (p: Project) => void
 }
 
@@ -111,6 +126,7 @@ export const useStore = create<StoreState>((set, get) => ({
   project: initialProject,
   activeScreenId: initialProject.screens[0].id,
   selectedId: null,
+  selectedImageId: null,
 
   activeScreen: () => {
     const { project, activeScreenId } = get()
@@ -121,14 +137,16 @@ export const useStore = create<StoreState>((set, get) => ({
 
   setTheme: (patch) => set((s) => ({ project: { ...s.project, theme: { ...s.project.theme, ...patch } } })),
 
-  select: (id) => set({ selectedId: id }),
+  select: (id) => set({ selectedId: id, selectedImageId: null }),
 
-  setActiveScreen: (id) => set({ activeScreenId: id, selectedId: null }),
+  selectImage: (id) => set({ selectedImageId: id, selectedId: null }),
+
+  setActiveScreen: (id) => set({ activeScreenId: id, selectedId: null, selectedImageId: null }),
 
   addScreen: () =>
     set((s) => {
-      const screen: Screen = { id: uid(), name: `Screen ${s.project.screens.length + 1}`, elements: [] }
-      return { project: { ...s.project, screens: [...s.project.screens, screen] }, activeScreenId: screen.id, selectedId: null }
+      const screen: Screen = { id: uid(), name: `Screen ${s.project.screens.length + 1}`, elements: [], images: [] }
+      return { project: { ...s.project, screens: [...s.project.screens, screen] }, activeScreenId: screen.id, selectedId: null, selectedImageId: null }
     }),
 
   renameScreen: (id, name) =>
@@ -185,5 +203,47 @@ export const useStore = create<StoreState>((set, get) => ({
       return { project: { ...s.project, screens } }
     }),
 
-  loadProject: (p) => set({ project: p, activeScreenId: p.screens[0]?.id ?? '', selectedId: null }),
+  addImage: (img) =>
+    set((s) => {
+      const layer: ImageLayer = { ...img, id: uid() }
+      const screens = s.project.screens.map((sc) =>
+        sc.id === s.activeScreenId ? { ...sc, images: [...sc.images, layer] } : sc,
+      )
+      return { project: { ...s.project, screens }, selectedImageId: layer.id, selectedId: null }
+    }),
+
+  updateImage: (id, patch) =>
+    set((s) => {
+      const screens = s.project.screens.map((sc) =>
+        sc.id === s.activeScreenId
+          ? { ...sc, images: sc.images.map((im) => (im.id === id ? { ...im, ...patch } : im)) }
+          : sc,
+      )
+      return { project: { ...s.project, screens } }
+    }),
+
+  deleteImage: (id) =>
+    set((s) => {
+      const screens = s.project.screens.map((sc) =>
+        sc.id === s.activeScreenId ? { ...sc, images: sc.images.filter((im) => im.id !== id) } : sc,
+      )
+      return { project: { ...s.project, screens }, selectedImageId: s.selectedImageId === id ? null : s.selectedImageId }
+    }),
+
+  bringImageToFront: (id) =>
+    set((s) => {
+      const screens = s.project.screens.map((sc) => {
+        if (sc.id !== s.activeScreenId) return sc
+        const target = sc.images.find((im) => im.id === id)
+        if (!target) return sc
+        return { ...sc, images: [...sc.images.filter((im) => im.id !== id), target] }
+      })
+      return { project: { ...s.project, screens } }
+    }),
+
+  loadProject: (p) =>
+    set(() => {
+      const project = normalizeProject(p)
+      return { project, activeScreenId: project.screens[0]?.id ?? '', selectedId: null, selectedImageId: null }
+    }),
 }))

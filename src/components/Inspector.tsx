@@ -1,5 +1,5 @@
 import { useStore } from '../store'
-import type { DesignElement, Theme } from '../types'
+import type { DesignElement, ImageLayer, Theme } from '../types'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -192,18 +192,63 @@ function ThemeInspector() {
   )
 }
 
+function ImageInspector({ img }: { img: ImageLayer }) {
+  const updateImage = useStore((s) => s.updateImage)
+  const deleteImage = useStore((s) => s.deleteImage)
+  const bringToFront = useStore((s) => s.bringImageToFront)
+  const set = (patch: Partial<ImageLayer>) => updateImage(img.id, patch)
+  // Keep rotation within -180..180 so the slider stays in sync.
+  const norm = (deg: number) => ((((deg + 180) % 360) + 360) % 360) - 180
+
+  return (
+    <>
+      <img className="img-preview" src={img.src} alt={img.name} />
+      <div className="hint">{img.name}</div>
+
+      <div className="inspector-group">Transform</div>
+      <Field label={`Breite (${Math.round(img.width)}px)`}>
+        <input type="range" min={24} max={320} value={Math.round(img.width)} onChange={(e) => {
+          const ratio = img.height / img.width
+          const width = +e.target.value
+          set({ width, height: width * ratio })
+        }} />
+      </Field>
+      <Field label={`Rotation (${img.rotation}°)`}>
+        <input type="range" min={-180} max={180} value={img.rotation} onChange={(e) => set({ rotation: +e.target.value })} />
+      </Field>
+      <div className="preset-row">
+        <button className="preset" onClick={() => set({ rotation: 0 })}>0°</button>
+        <button className="preset" onClick={() => set({ rotation: norm(img.rotation - 90) })}>↺ 90°</button>
+        <button className="preset" onClick={() => set({ rotation: norm(img.rotation + 90) })}>↻ 90°</button>
+      </div>
+
+      <div className="inspector-group">Anordnung</div>
+      <button className="btn small" onClick={() => bringToFront(img.id)}>In den Vordergrund</button>
+      <button className="btn danger small" onClick={() => deleteImage(img.id)}>Bild löschen</button>
+
+      <div className="hint">Tipp: Im Handy kannst du das Bild ziehen, an der Ecke skalieren und am oberen Griff drehen.</div>
+    </>
+  )
+}
+
 export default function Inspector() {
   const selectedId = useStore((s) => s.selectedId)
+  const selectedImageId = useStore((s) => s.selectedImageId)
   const screen = useStore((s) => s.activeScreen())
   const selected = screen.elements.find((e) => e.id === selectedId)
+  const selectedImage = screen.images.find((i) => i.id === selectedImageId)
+
+  const title = selectedImage ? 'Bild bearbeiten' : selected ? 'Element bearbeiten' : 'Design & Theme'
 
   return (
     <aside className="panel right">
-      <div className="panel-title">{selected ? 'Element bearbeiten' : 'Design & Theme'}</div>
+      <div className="panel-title">{title}</div>
       <div className="inspector-body">
-        {selected ? <ElementInspector el={selected} /> : <ThemeInspector />}
+        {selectedImage ? <ImageInspector img={selectedImage} /> : selected ? <ElementInspector el={selected} /> : <ThemeInspector />}
       </div>
-      {selected && <div className="hint">Klicke auf den leeren Bereich, um zu den Theme-Einstellungen zurückzukehren.</div>}
+      {(selected || selectedImage) && (
+        <div className="hint">Klicke auf den leeren Bereich, um zu den Theme-Einstellungen zurückzukehren.</div>
+      )}
     </aside>
   )
 }
