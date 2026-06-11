@@ -76,6 +76,10 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
       return `Card ${pos} mit Titel "${p.text}"${interInline}.`
     case 'list':
       return `Liste ${pos} mit Beispiel-Einträgen: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
+    case 'lucide': {
+      const color = p.bg ?? project.tokens.text
+      return `Icon "${p.iconName ?? 'house'}" (Lucide) ${pos}, Farbe ${color}, Strichstärke ${p.borderWidth ?? 2}${interInline}.`
+    }
     case 'icon':
       return `Icon ${pos}: "${p.icon}"${interInline}.`
     case 'toggle':
@@ -210,12 +214,15 @@ export function generatePrompt(project: Project): string {
   out.push('')
 
   const hasMockups = project.screens.some((s) => s.nodes.some((n) => n.type === 'image' && n.props.src))
+  const hasIcons = project.screens.some((s) => s.nodes.some((n) => n.type === 'lucide'))
 
   out.push('## Technische Vorgaben')
   out.push('')
   out.push('- Saubere, komponentenbasierte Umsetzung; responsives, mobil-zentriertes Layout.')
   out.push('- Verwende die Design-Tokens als zentrale CSS-Variablen / Theme-Konstanten.')
   out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px), sanfte Übergänge.')
+  if (hasIcons)
+    out.push('- Verwende für alle Icons die Lucide-Bibliothek (lucide-react o. ä.) mit exakt den angegebenen Icon-Namen.')
   if (hasMockups)
     out.push(
       '- Hochgeladene UI-Mockups sind verbindliche Design-Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',

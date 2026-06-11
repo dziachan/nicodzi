@@ -1,5 +1,6 @@
 import { componentLabel, useStore } from '../store'
 import ImageOcr from './ImageOcr'
+import IconPicker from './IconPicker'
 import { isShape, type ComponentNode } from '../types'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -24,6 +25,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
   const sp = (patch: Partial<ComponentNode['props']>) => setProps(node.id, patch)
   const has = (...t: ComponentNode['type'][]) => t.includes(node.type)
   const shape = isShape(node.type)
+  const isIcon = node.type === 'lucide'
 
   const colorField = (label: string, key: 'bg' | 'textColor' | 'borderColor', fallback: string) => (
     <Field label={label}>
@@ -94,6 +96,28 @@ export default function Inspector({ node }: { node: ComponentNode }) {
         </>
       )}
 
+      {/* ---- Lucide icon ---- */}
+      {isIcon && (
+        <>
+          <div className="inspector-group">Symbol</div>
+          <div className="hint">Aktuell: {p.iconName ?? 'house'}</div>
+          <IconPicker selected={p.iconName} onPick={(id) => sp({ iconName: id })} />
+          {colorField('Farbe', 'bg', tokens.text)}
+          <Field label={`Größe (${Math.round(Math.min(node.w, node.h))}px)`}>
+            <input type="range" min={16} max={160} value={Math.round(Math.min(node.w, node.h))} onChange={(e) => setNode(node.id, { w: +e.target.value, h: +e.target.value })} />
+          </Field>
+          <Field label={`Strichstärke (${p.borderWidth ?? 2})`}>
+            <input type="range" min={1} max={4} step={0.25} value={p.borderWidth ?? 2} onChange={(e) => sp({ borderWidth: +e.target.value })} />
+          </Field>
+          <Field label={`Drehung (${p.rotation ?? 0}°)`}>
+            <input type="range" min={-180} max={180} value={p.rotation ?? 0} onChange={(e) => sp({ rotation: +e.target.value })} />
+          </Field>
+          <Field label={`Deckkraft (${Math.round((p.opacity ?? 1) * 100)}%)`}>
+            <input type="range" min={0} max={100} value={Math.round((p.opacity ?? 1) * 100)} onChange={(e) => sp({ opacity: +e.target.value / 100 })} />
+          </Field>
+        </>
+      )}
+
       {has('label', 'button', 'card', 'topBar', 'input', 'searchBar', 'toggle') && (
         <Field label={`Schriftgröße (${p.fontSize ?? tokens.baseFontSize}px)`}>
           <input type="range" min={10} max={40} value={p.fontSize ?? tokens.baseFontSize} onChange={(e) => sp({ fontSize: +e.target.value })} />
@@ -108,13 +132,13 @@ export default function Inspector({ node }: { node: ComponentNode }) {
           </select>
         </Field>
       )}
-      {!has('icon', 'bottomNav') && !shape && (
+      {!has('icon', 'bottomNav') && !shape && !isIcon && (
         <Field label={`Eckenradius (${p.radius ?? tokens.radius}px)`}>
           <input type="range" min={0} max={40} value={p.radius ?? tokens.radius} onChange={(e) => sp({ radius: +e.target.value })} />
         </Field>
       )}
 
-      {!shape && (
+      {!shape && !isIcon && (
         <>
           {colorField('Hintergrund/Akzent', 'bg', tokens.primary)}
           {colorField('Textfarbe', 'textColor', tokens.text)}

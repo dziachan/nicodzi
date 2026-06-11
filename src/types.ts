@@ -10,6 +10,7 @@ export type ComponentType =
   | 'icon'
   | 'toggle'
   | 'searchBar'
+  | 'lucide'
   | 'rectangle'
   | 'ellipse'
   | 'line'
@@ -28,6 +29,7 @@ export interface NodeProps {
   radius?: number
   align?: Align
   icon?: string
+  iconName?: string // Lucide icon id (kebab-case) for 'lucide' components
   src?: string // data URL for uploaded images
   ocrText?: string // text the user accepted from OCR (only this goes into the prompt)
   description?: string // free-text "what does this image show?"

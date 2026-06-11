@@ -53,7 +53,8 @@ export default function PhoneEditor() {
     const type = e.dataTransfer.getData('application/x-phorge-component') as ComponentType
     if (type) {
       const sizeRaw = e.dataTransfer.getData('application/x-phorge-size')
-      addNode(type, at, sizeRaw ? JSON.parse(sizeRaw) : undefined)
+      const iconName = e.dataTransfer.getData('application/x-phorge-icon')
+      addNode(type, at, sizeRaw ? JSON.parse(sizeRaw) : undefined, iconName ? { iconName } : undefined)
     }
   }
 

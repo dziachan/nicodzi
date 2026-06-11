@@ -59,6 +59,10 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
     if (d.mode === 'move') {
       // No clamping: components may be placed freely, even past the screen edge.
       updateNode(node.id, { x: Math.round(d.start.x + dx), y: Math.round(d.start.y + dy) }, 'none')
+    } else if (node.type === 'lucide') {
+      // Icons keep a 1:1 aspect ratio.
+      const s = Math.max(MIN, Math.round(d.start.w + Math.max(dx, dy)))
+      updateNode(node.id, { w: s, h: s }, 'none')
     } else {
       const w = Math.max(MIN, Math.round(d.start.w + dx))
       const h = Math.max(MIN, Math.round(d.start.h + dy))

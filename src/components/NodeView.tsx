@@ -1,3 +1,4 @@
+import { getIconComp, DEFAULT_ICON } from '../lucideIcons'
 import type { ComponentNode, DesignTokens } from '../types'
 
 interface Props {
@@ -211,6 +212,16 @@ export default function NodeView({ node, tokens }: Props) {
 
     case 'line':
       return <div style={{ ...fill, background: p.bg ?? tokens.text, borderRadius: p.radius ?? 0 }} />
+
+    case 'lucide': {
+      const Comp = getIconComp(p.iconName) ?? getIconComp(DEFAULT_ICON)!
+      const sz = Math.round(Math.min(node.w, node.h))
+      return (
+        <div style={{ ...fill, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Comp size={sz} color={p.bg ?? tokens.text} strokeWidth={p.borderWidth ?? 2} />
+        </div>
+      )
+    }
 
     case 'toggle':
       return (

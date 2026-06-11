@@ -20,6 +20,7 @@ const labels: Record<ComponentType, string> = {
   icon: 'Icon',
   toggle: 'Toggle',
   searchBar: 'Suchleiste',
+  lucide: 'Symbol',
   rectangle: 'Rechteck',
   ellipse: 'Ellipse',
   line: 'Linie',
@@ -52,6 +53,8 @@ export function defaultNode(type: ComponentType): ComponentNode {
       return { ...base, x: 140, y: 150, w: 40, h: 40, props: { icon: '★' } }
     case 'toggle':
       return { ...base, x: 40, y: 160, w: 240, h: 40, props: { text: 'Option aktivieren', value: true } }
+    case 'lucide':
+      return { ...base, x: 140, y: 150, w: 40, h: 40, props: { iconName: 'house', borderWidth: 2 } }
     case 'rectangle':
       return { ...base, x: 60, y: 200, w: 200, h: 120, props: { bg: '#6366f1', radius: 12, borderWidth: 0, borderColor: '#000000', opacity: 1, rotation: 0 } }
     case 'ellipse':
@@ -145,7 +148,7 @@ interface StoreState {
   renameScreen: (id: string, name: string) => void
   updateScreen: (id: string, patch: Partial<Screen>) => void
 
-  addNode: (type: ComponentType, at?: { x: number; y: number }, size?: { w: number; h: number }) => void
+  addNode: (type: ComponentType, at?: { x: number; y: number }, size?: { w: number; h: number }, props?: Partial<ComponentNode['props']>) => void
   reorderNode: (id: string, where: 'front' | 'back' | 'forward' | 'backward') => void
   addImageNode: (src: string, w: number, h: number, at: { x: number; y: number }) => string
   updateNode: (id: string, patch: Partial<ComponentNode>, history?: HistoryMode) => void
@@ -265,13 +268,14 @@ export const useStore = create<StoreState>((set, get) => {
 
     updateScreen: (id, patch) => apply((p) => mapScreen(p, id, (s) => ({ ...s, ...patch })), 'coalesce'),
 
-    addNode: (type, at, size) =>
+    addNode: (type, at, size, props) =>
       set((s) => {
         const node = defaultNode(type)
         if (size) {
           node.w = size.w
           node.h = size.h
         }
+        if (props) node.props = { ...node.props, ...props }
         // Free placement: position is centered on the drop point, not clamped to the screen.
         if (at) {
           node.x = Math.round(at.x - node.w / 2)

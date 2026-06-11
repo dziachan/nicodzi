@@ -1,4 +1,5 @@
 import { componentLabel, useStore } from '../store'
+import IconPicker from './IconPicker'
 import type { ComponentType } from '../types'
 
 interface PItem {
@@ -63,6 +64,11 @@ export default function Palette() {
           </div>
         </div>
       ))}
+
+      <div className="palette-group">
+        <div className="group-label">Symbole (Lucide)</div>
+        <IconPicker draggable onPick={(id) => addNode('lucide', undefined, undefined, { iconName: id })} />
+      </div>
     </aside>
   )
 }
