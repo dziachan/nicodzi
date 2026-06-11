@@ -39,6 +39,25 @@ export default function Inspector({ node }: { node: ComponentNode }) {
 
   const roundMax = Math.round(Math.min(node.w, node.h) / 2)
 
+  // Apply a font size and grow the box height so large text is never clipped.
+  const setFont = (n: number) => {
+    if (!Number.isFinite(n)) return
+    const v = Math.max(1, Math.round(n))
+    sp({ fontSize: v })
+    const lh = isText ? p.lineHeight ?? 1.5 : 1.3
+    const minH = Math.ceil(v * lh) + (isText ? 12 : 6)
+    if (node.h < minH) setNode(node.id, { h: minH })
+  }
+
+  const fontSizeControl = (value: number) => (
+    <Field label={`Schriftgröße (${value}px)`}>
+      <div className="fs-row">
+        <input type="range" min={8} max={200} value={Math.min(value, 200)} onChange={(e) => setFont(+e.target.value)} />
+        <input type="number" min={1} value={value} onChange={(e) => setFont(+e.target.value)} />
+      </div>
+    </Field>
+  )
+
   return (
     <div className="inspector-body">
       <div className="inspector-group">{componentLabel(node.type)}</div>
@@ -128,13 +147,11 @@ export default function Inspector({ node }: { node: ComponentNode }) {
           <Field label="Textgröße">
             <div className="seg">
               {([['Untertitel', 18], ['Normal', 16], ['Klein', 14], ['Caption', 12]] as const).map(([lbl, px]) => (
-                <button key={px} className={(p.fontSize ?? 16) === px ? 'active' : ''} onClick={() => sp({ fontSize: px })}>{lbl}</button>
+                <button key={px} className={(p.fontSize ?? 16) === px ? 'active' : ''} onClick={() => setFont(px)}>{lbl}</button>
               ))}
             </div>
           </Field>
-          <Field label="Größe (px)">
-            <input type="number" min={8} max={64} value={p.fontSize ?? 16} onChange={(e) => sp({ fontSize: +e.target.value })} />
-          </Field>
+          {fontSizeControl(p.fontSize ?? 16)}
           <Field label="Schriftschnitt">
             <select value={p.textStyle ?? 'normal'} onChange={(e) => sp({ textStyle: e.target.value as any })}>
               <option value="normal">Normal</option>
@@ -159,11 +176,12 @@ export default function Inspector({ node }: { node: ComponentNode }) {
         </>
       )}
 
-      {has('label', 'button', 'card', 'topBar', 'input', 'searchBar', 'toggle') && (
+      {has('button', 'card', 'topBar', 'input', 'searchBar', 'toggle') && (
         <Field label={`Schriftgröße (${p.fontSize ?? tokens.baseFontSize}px)`}>
           <input type="range" min={10} max={40} value={p.fontSize ?? tokens.baseFontSize} onChange={(e) => sp({ fontSize: +e.target.value })} />
         </Field>
       )}
+      {has('label') && fontSizeControl(p.fontSize ?? 22)}
       {has('label', 'button', 'topBar') && (
         <Field label="Ausrichtung">
           <select value={p.align ?? 'left'} onChange={(e) => sp({ align: e.target.value as any })}>

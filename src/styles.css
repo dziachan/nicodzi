@@ -134,6 +134,9 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 .color-row { display: flex; gap: 8px; align-items: center; }
 .color-row input[type=color] { width: 38px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); padding: 2px; cursor: pointer; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fs-row { display: flex; align-items: center; gap: 8px; }
+.fs-row input[type=range] { flex: 1; }
+.fs-row input[type=number] { width: 70px; flex: none; }
 .layer-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .layer-row .btn { padding: 8px 0; font-size: 14px; }
 .field-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; }

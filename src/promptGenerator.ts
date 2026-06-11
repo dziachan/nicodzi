@@ -57,7 +57,7 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
     case 'label': {
       const fs = p.fontSize ?? 22
       const level = fs >= 28 ? 'h1' : fs >= 20 ? 'h2' : 'h3'
-      return `Überschrift ${pos}: "${p.text}" (~${fs}px) – als Heading <${level}> umsetzen, NICHT als Fließtext.${interNote}`
+      return `Überschrift ${pos}: "${p.text}" (${fs}px) – als Heading <${level}> umsetzen, NICHT als Fließtext.${interNote}`
     }
     case 'text': {
       const styleLbl = p.textStyle === 'bold' ? 'Fett' : p.textStyle === 'italic' ? 'Kursiv' : 'Normal'

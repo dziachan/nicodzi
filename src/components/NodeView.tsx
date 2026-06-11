@@ -126,7 +126,6 @@ export default function NodeView({ node, tokens }: Props) {
             textAlign: align,
             whiteSpace: 'pre-wrap',
             overflowWrap: 'break-word',
-            overflow: 'hidden',
           }}
         >
           {p.text}
