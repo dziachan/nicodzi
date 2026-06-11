@@ -12,6 +12,7 @@ const labels: Record<ComponentType, string> = {
   button: 'Button',
   input: 'Textfeld',
   label: 'Überschrift',
+  text: 'Text',
   image: 'Bild',
   card: 'Card',
   list: 'Liste',
@@ -43,6 +44,8 @@ export function defaultNode(type: ComponentType): ComponentNode {
       return { ...base, x: 40, y: 90, w: 240, h: 42, props: { placeholder: 'Suchen…' } }
     case 'label':
       return { ...base, x: 40, y: 110, w: 240, h: 34, props: { text: 'Überschrift', fontSize: 22, align: 'left' } }
+    case 'text':
+      return { ...base, x: 40, y: 160, w: 240, h: 80, props: { text: 'Hier steht ein längerer Beschreibungstext, der innerhalb der Komponentenbreite automatisch umbricht.', fontSize: 16, textStyle: 'normal', align: 'left', lineHeight: 1.5 } }
     case 'image':
       return { ...base, x: 60, y: 150, w: 200, h: 140, props: {} }
     case 'card':

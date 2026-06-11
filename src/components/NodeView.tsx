@@ -113,6 +113,26 @@ export default function NodeView({ node, tokens }: Props) {
         </div>
       )
 
+    case 'text':
+      return (
+        <div
+          style={{
+            ...fill,
+            color: p.textColor ?? tokens.text,
+            fontSize: p.fontSize ?? 16,
+            fontWeight: p.textStyle === 'bold' ? 700 : 400,
+            fontStyle: p.textStyle === 'italic' ? 'italic' : 'normal',
+            lineHeight: p.lineHeight ?? 1.5,
+            textAlign: align,
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            overflow: 'hidden',
+          }}
+        >
+          {p.text}
+        </div>
+      )
+
     case 'image':
       return p.src ? (
         <img src={p.src} alt="" draggable={false} style={{ ...fill, objectFit: 'cover', borderRadius: radius, display: 'block' }} />

@@ -17,6 +17,7 @@ const groups: { title: string; items: PItem[] }[] = [
   ] },
   { title: 'Inhalt', items: [
     { type: 'label', icon: 'H' },
+    { type: 'text', icon: '¶' },
     { type: 'image', icon: '🖼' },
     { type: 'icon', icon: '★' },
     { type: 'list', icon: '≣' },

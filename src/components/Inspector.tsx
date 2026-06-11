@@ -26,6 +26,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
   const has = (...t: ComponentNode['type'][]) => t.includes(node.type)
   const shape = isShape(node.type)
   const isIcon = node.type === 'lucide'
+  const isText = node.type === 'text'
 
   const colorField = (label: string, key: 'bg' | 'textColor' | 'borderColor', fallback: string) => (
     <Field label={label}>
@@ -118,6 +119,46 @@ export default function Inspector({ node }: { node: ComponentNode }) {
         </>
       )}
 
+      {/* ---- Body text (paragraph) ---- */}
+      {isText && (
+        <>
+          <Field label="Textinhalt">
+            <textarea rows={4} value={p.text ?? ''} onChange={(e) => sp({ text: e.target.value })} />
+          </Field>
+          <Field label="Textgröße">
+            <div className="seg">
+              {([['Untertitel', 18], ['Normal', 16], ['Klein', 14], ['Caption', 12]] as const).map(([lbl, px]) => (
+                <button key={px} className={(p.fontSize ?? 16) === px ? 'active' : ''} onClick={() => sp({ fontSize: px })}>{lbl}</button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Größe (px)">
+            <input type="number" min={8} max={64} value={p.fontSize ?? 16} onChange={(e) => sp({ fontSize: +e.target.value })} />
+          </Field>
+          <Field label="Schriftschnitt">
+            <select value={p.textStyle ?? 'normal'} onChange={(e) => sp({ textStyle: e.target.value as any })}>
+              <option value="normal">Normal</option>
+              <option value="bold">Fett</option>
+              <option value="italic">Kursiv</option>
+            </select>
+          </Field>
+          {colorField('Farbe', 'textColor', tokens.text)}
+          <Field label={`Zeilenhöhe (${(p.lineHeight ?? 1.5).toFixed(1)})`}>
+            <input type="range" min={1} max={2.2} step={0.1} value={p.lineHeight ?? 1.5} onChange={(e) => sp({ lineHeight: +e.target.value })} />
+          </Field>
+          <Field label="Ausrichtung">
+            <select value={p.align ?? 'left'} onChange={(e) => sp({ align: e.target.value as any })}>
+              <option value="left">Links</option>
+              <option value="center">Mitte</option>
+              <option value="right">Rechts</option>
+            </select>
+          </Field>
+          <Field label={`Deckkraft (${Math.round((p.opacity ?? 1) * 100)}%)`}>
+            <input type="range" min={0} max={100} value={Math.round((p.opacity ?? 1) * 100)} onChange={(e) => sp({ opacity: +e.target.value / 100 })} />
+          </Field>
+        </>
+      )}
+
       {has('label', 'button', 'card', 'topBar', 'input', 'searchBar', 'toggle') && (
         <Field label={`Schriftgröße (${p.fontSize ?? tokens.baseFontSize}px)`}>
           <input type="range" min={10} max={40} value={p.fontSize ?? tokens.baseFontSize} onChange={(e) => sp({ fontSize: +e.target.value })} />
@@ -132,13 +173,13 @@ export default function Inspector({ node }: { node: ComponentNode }) {
           </select>
         </Field>
       )}
-      {!has('icon', 'bottomNav') && !shape && !isIcon && (
+      {!has('icon', 'bottomNav') && !shape && !isIcon && !isText && (
         <Field label={`Eckenradius (${p.radius ?? tokens.radius}px)`}>
           <input type="range" min={0} max={40} value={p.radius ?? tokens.radius} onChange={(e) => sp({ radius: +e.target.value })} />
         </Field>
       )}
 
-      {!shape && !isIcon && (
+      {!shape && !isIcon && !isText && (
         <>
           {colorField('Hintergrund/Akzent', 'bg', tokens.primary)}
           {colorField('Textfarbe', 'textColor', tokens.text)}

@@ -2,6 +2,7 @@ export type ComponentType =
   | 'button'
   | 'input'
   | 'label'
+  | 'text'
   | 'image'
   | 'card'
   | 'list'
@@ -26,6 +27,8 @@ export interface NodeProps {
   bg?: string
   textColor?: string
   fontSize?: number
+  textStyle?: 'normal' | 'bold' | 'italic' // body text style (component 'text')
+  lineHeight?: number
   radius?: number
   align?: Align
   icon?: string

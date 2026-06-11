@@ -54,8 +54,17 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
       return `Texteingabefeld ${pos}, Platzhalter "${p.placeholder}".`
     case 'searchBar':
       return `Suchleiste ${pos}, Platzhalter "${p.placeholder}".`
-    case 'label':
-      return `Label/Überschrift ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).${interNote}`
+    case 'label': {
+      const fs = p.fontSize ?? 22
+      const level = fs >= 28 ? 'h1' : fs >= 20 ? 'h2' : 'h3'
+      return `Überschrift ${pos}: "${p.text}" (~${fs}px) – als Heading <${level}> umsetzen, NICHT als Fließtext.${interNote}`
+    }
+    case 'text': {
+      const styleLbl = p.textStyle === 'bold' ? 'Fett' : p.textStyle === 'italic' ? 'Kursiv' : 'Normal'
+      const color = p.textColor ?? project.tokens.text
+      const al = p.align ?? 'left'
+      return `Fließtext ${pos}: "${p.text}" (${styleLbl}, ${p.fontSize ?? 16}px, ${color}, ${al}, Zeilenhöhe ${p.lineHeight ?? 1.5}) – als Absatz/<p> umsetzen, NICHT als Überschrift.${interNote}`
+    }
     case 'image': {
       const desc = p.description?.trim()
       const ocr = p.ocrText?.trim()
