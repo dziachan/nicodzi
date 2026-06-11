@@ -41,15 +41,17 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
     case 'label':
       return `Überschrift/Label ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).`
     case 'image': {
-      if (!p.src) return `Bild-Platzhalter ${pos}.`
+      const desc = p.description?.trim()
       const ocr = p.ocrText?.trim()
       if (ocr) {
         return (
-          `Vom Nutzer hochgeladenes UI-Mockup ${pos} — verwende es als visuelle Vorlage und baue das gezeigte UI nach. ` +
-          `Im Bild per OCR erkannter Text/Inhalt:\n\n\`\`\`\n${ocr}\n\`\`\``
+          `Vom Nutzer hochgeladenes UI-Mockup ${pos} — verwende es als visuelle Vorlage und baue das gezeigte UI nach.` +
+          (desc ? ` Inhalt: ${desc}.` : '') +
+          `\n\nIm Bild erkannter Text/Inhalt:\n\n\`\`\`\n${ocr}\n\`\`\``
         )
       }
-      return `Vom Nutzer hochgeladenes UI-Mockup ${pos} — als visuelle Vorlage nachbauen.`
+      if (desc) return `Bild-Platzhalter ${pos} — zeigt: ${desc}.`
+      return `Bild-Platzhalter ${pos} (Bild vom Nutzer; Inhalt nicht näher beschrieben).`
     }
     case 'card':
       return `Card ${pos} mit Titel "${p.text}".`

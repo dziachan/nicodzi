@@ -29,8 +29,8 @@ export interface NodeProps {
   align?: Align
   icon?: string
   src?: string // data URL for uploaded images
-  ocrText?: string // text recognized in an uploaded image (OCR)
-  ocrStatus?: 'pending' | 'done' | 'error'
+  ocrText?: string // text the user accepted from OCR (only this goes into the prompt)
+  description?: string // free-text "what does this image show?"
   items?: string[] // list / bottomNav entries
   value?: boolean // toggle state
   navigateTo?: string | null // target screen id on tap

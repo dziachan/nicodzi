@@ -124,6 +124,9 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .layer-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .layer-row .btn { padding: 8px 0; font-size: 14px; }
+.field-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; }
+.field-textarea:focus { outline: none; border-color: var(--primary); }
+.ocr-preview { margin: 0; max-height: 140px; overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.5; color: #d7d7e0; white-space: pre-wrap; word-break: break-word; }
 .preset-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .preset { flex: 1 1 45%; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 8px 6px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
 .preset:hover { border-color: var(--primary); }

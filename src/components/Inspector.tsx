@@ -1,5 +1,5 @@
 import { componentLabel, useStore } from '../store'
-import { recognizeText } from '../ocr'
+import ImageOcr from './ImageOcr'
 import { isShape, type ComponentNode } from '../types'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -24,14 +24,6 @@ export default function Inspector({ node }: { node: ComponentNode }) {
   const sp = (patch: Partial<ComponentNode['props']>) => setProps(node.id, patch)
   const has = (...t: ComponentNode['type'][]) => t.includes(node.type)
   const shape = isShape(node.type)
-
-  const rerunOcr = () => {
-    if (!p.src) return
-    sp({ ocrStatus: 'pending' })
-    recognizeText(p.src)
-      .then((text) => sp({ ocrText: text, ocrStatus: 'done' }))
-      .catch(() => sp({ ocrStatus: 'error' }))
-  }
 
   const colorField = (label: string, key: 'bg' | 'textColor' | 'borderColor', fallback: string) => (
     <Field label={label}>
@@ -77,20 +69,7 @@ export default function Inspector({ node }: { node: ComponentNode }) {
         </Field>
       )}
 
-      {has('image') && p.src && (
-        <>
-          <div className="inspector-group">Erkannter Text (OCR)</div>
-          {p.ocrStatus === 'pending' && <div className="hint">Text im Bild wird gelesen…</div>}
-          {p.ocrStatus === 'error' && <div className="hint" style={{ color: '#f87171' }}>OCR fehlgeschlagen (offline?). Erneut versuchen.</div>}
-          <Field label="Im Bild gefundener Text (editierbar)">
-            <textarea rows={5} placeholder="(kein Text erkannt)" value={p.ocrText ?? ''} onChange={(e) => sp({ ocrText: e.target.value })} />
-          </Field>
-          <div className="hint">Dieser Text wird in den Export-Prompt übernommen, damit das UI nachgebaut werden kann.</div>
-          <button className="btn small" onClick={rerunOcr} disabled={p.ocrStatus === 'pending'}>
-            {p.ocrStatus === 'pending' ? 'Wird gelesen…' : 'Text neu erkennen'}
-          </button>
-        </>
-      )}
+      {has('image') && p.src && <ImageOcr key={node.id} node={node} />}
 
       {/* ---- Shape styling ---- */}
       {shape && (

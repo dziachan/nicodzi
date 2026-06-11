@@ -3,7 +3,6 @@ import { useStore } from '../store'
 import { FRAME_H, FRAME_W, SCREEN_H, SCREEN_W } from '../constants'
 import CanvasNode from './CanvasNode'
 import NodeView from './NodeView'
-import { recognizeText } from '../ocr'
 import type { ComponentType } from '../types'
 
 const IMG_TYPES = ['image/png', 'image/jpeg']
@@ -18,7 +17,6 @@ export default function PhoneEditor() {
   const selectNode = useStore((s) => s.selectNode)
   const addNode = useStore((s) => s.addNode)
   const addImageNode = useStore((s) => s.addImageNode)
-  const patchNodeProps = useStore((s) => s.patchNodeProps)
 
   const screenRef = useRef<HTMLDivElement>(null)
   const [over, setOver] = useState(false)
@@ -43,11 +41,8 @@ export default function PhoneEditor() {
             const ratio = probe.naturalWidth / probe.naturalHeight || 1
             const w = ratio >= 1 ? MAX_IMG : MAX_IMG * ratio
             const h = ratio >= 1 ? MAX_IMG / ratio : MAX_IMG
-            const id = addImageNode(src, w, h, at)
-            // Read any text in the image (e.g. a UI mockup from Photoshop) via OCR.
-            recognizeText(src)
-              .then((text) => patchNodeProps(id, { ocrText: text, ocrStatus: 'done' }))
-              .catch(() => patchNodeProps(id, { ocrStatus: 'error' }))
+            // OCR is now a deliberate, user-triggered action (see Inspector).
+            addImageNode(src, w, h, at)
           }
           probe.src = src
         }

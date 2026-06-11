@@ -306,7 +306,7 @@ export const useStore = create<StoreState>((set, get) => {
       node.h = h
       node.x = Math.round(at.x - w / 2)
       node.y = Math.round(at.y - h / 2)
-      node.props = { src, ocrStatus: 'pending' }
+      node.props = { src }
       set((s) => ({
         project: mapScreen(s.project, s.activeScreenId, (sc) => ({ ...sc, nodes: [...sc.nodes, node] })),
         selectedNodeId: node.id,
