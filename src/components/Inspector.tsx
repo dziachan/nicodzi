@@ -123,17 +123,45 @@ export default function Inspector({ node }: { node: ComponentNode }) {
 
       {!shape && (
         <>
-          <div className="inspector-group">Navigation</div>
-          <Field label="Bei Tap zu Screen">
-            <select value={p.navigateTo ?? ''} onChange={(e) => sp({ navigateTo: e.target.value || null })}>
-              <option value="">— keine —</option>
-              {screens
-                .filter((s) => s.id !== activeScreenId)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-            </select>
+          <div className="inspector-group">Interaktion</div>
+          <Field label="Anklickbar">
+            <input
+              type="checkbox"
+              checked={!!p.clickable}
+              onChange={(e) => sp({ clickable: e.target.checked, linkKind: p.linkKind ?? 'screen' })}
+            />
           </Field>
+          {p.clickable && (
+            <>
+              <Field label="Führt zu:">
+                <select
+                  value={p.linkKind === 'external' ? '__external__' : p.navigateTo ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === '__external__') sp({ linkKind: 'external' })
+                    else sp({ linkKind: 'screen', navigateTo: v || null })
+                  }}
+                >
+                  <option value="">— Ziel wählen —</option>
+                  {screens
+                    .filter((s) => s.id !== activeScreenId)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>Screen: {s.name}</option>
+                    ))}
+                  <option value="__external__">Externe Aktion (Beschreibung)</option>
+                </select>
+              </Field>
+              {p.linkKind === 'external' && (
+                <Field label="Beschreibung der Aktion">
+                  <input
+                    value={p.externalAction ?? ''}
+                    placeholder="z. B. öffnet Instagram-Profil"
+                    onChange={(e) => sp({ externalAction: e.target.value })}
+                  />
+                </Field>
+              )}
+            </>
+          )}
         </>
       )}
 

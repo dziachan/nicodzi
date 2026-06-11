@@ -83,6 +83,8 @@ function starterProject(): Project {
   const submit = defaultNode('button')
   submit.props.text = 'Anmelden'
   submit.y = 330
+  submit.props.clickable = true
+  submit.props.linkKind = 'screen'
   submit.props.navigateTo = home.id
   login.nodes = [title, email, pass, submit]
 

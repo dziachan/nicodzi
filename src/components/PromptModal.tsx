@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { generatePrompt } from '../promptGenerator'
+import { computeWarnings } from '../interactions'
 
 export default function PromptModal({ onClose }: { onClose: () => void }) {
   const project = useStore((s) => s.project)
+  const patchNodeProps = useStore((s) => s.patchNodeProps)
   const prompt = useMemo(() => generatePrompt(project), [project])
+  const warnings = useMemo(() => computeWarnings(project), [project])
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -48,6 +51,29 @@ export default function PromptModal({ onClose }: { onClose: () => void }) {
           </div>
           <button className="btn" onClick={onClose}>Schließen</button>
         </div>
+
+        {warnings.length > 0 && (
+          <div className="warnings">
+            <div className="warnings-title">⚠ {warnings.length} Hinweis(e) — Export trotzdem möglich</div>
+            <ul>
+              {warnings.map((w, i) => {
+                if (w.type === 'noTarget')
+                  return <li key={i}>„{w.label}" (Screen „{w.screenName}") ist klickbar, hat aber kein Ziel.</li>
+                if (w.type === 'unreachable')
+                  return <li key={i}>Screen „{w.screenName}" ist von keinem anderen Screen aus erreichbar.</li>
+                return (
+                  <li key={i}>
+                    „{w.label}" (Screen „{w.screenName}") sieht wie Navigation aus, ist aber nicht als klickbar markiert.{' '}
+                    <button className="link-btn" onClick={() => patchNodeProps(w.nodeId, { clickable: true, linkKind: 'screen' })}>
+                      Als klickbar markieren
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
         <pre className="prompt-out">{prompt}</pre>
         <div className="modal-foot">
           <button className="btn" onClick={download}>⬇ .md herunterladen</button>

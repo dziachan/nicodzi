@@ -1,8 +1,17 @@
 import { SCREEN_H, SCREEN_W } from './constants'
+import { getEdges, getInteraction, nodeLabel, type Interaction } from './interactions'
 import type { ComponentNode, Project, Screen } from './types'
 
 const screenName = (project: Project, id?: string | null) =>
   id ? project.screens.find((s) => s.id === id)?.name ?? null : null
+
+/** Human description of a node's interaction (clickable target). */
+function interactionText(it: Interaction, project: Project): string {
+  if (it.kind === 'external') return `KLICKBAR, löst externe Aktion aus${it.text ? `: „${it.text}"` : ' (Beschreibung fehlt)'}`
+  return it.screenId ? `KLICKBAR, navigiert zu Screen „${screenName(project, it.screenId)}"` : 'KLICKBAR, aber ohne Ziel'
+}
+
+const TOUCH_NOTE = ' Umsetzung als Button mit dem beschriebenen Erscheinungsbild, Touch-Target mindestens 44px.'
 
 /** Vertical region of a node, for human-readable positioning in the prompt. */
 function region(node: ComponentNode): string {
@@ -16,11 +25,18 @@ function region(node: ComponentNode): string {
 function describeNode(node: ComponentNode, project: Project, layer: number): string {
   const p = node.props
   const pos = `[${region(node)}, ${Math.round(node.w)}×${Math.round(node.h)}px]`
-  const nav = p.navigateTo ? ` → bei Tap Navigation zu Screen "${screenName(project, p.navigateTo)}"` : ''
   const layerInfo = `Ebene ${layer}`
   const rot = p.rotation ? `, um ${p.rotation}° gedreht` : ''
   const op = p.opacity != null && p.opacity < 1 ? `, Deckkraft ${Math.round(p.opacity * 100)}%` : ''
   const border = p.borderWidth ? `, Rand ${p.borderWidth}px ${p.borderColor ?? '#000'}` : ''
+
+  const it = getInteraction(node)
+  const inter = it ? interactionText(it, project) : ''
+  // For inherently-clickable controls the interaction reads inline; for text/image
+  // we add an explicit note to implement them as a proper, accessible button.
+  const interInline = it ? `, ${inter}` : ''
+  const interNote = it ? ` ${inter}.${TOUCH_NOTE}` : ''
+
   switch (node.type) {
     case 'rectangle':
       return `Gestaltungselement Rechteck ${pos} (${layerInfo}), Füllfarbe ${p.bg}, Eckenradius ${p.radius ?? 0}px${border}${op}${rot}.`
@@ -33,32 +49,35 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
     case 'bottomNav':
       return `Bottom-Navigation ${pos} mit Tabs: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
     case 'button':
-      return `Button ${pos} mit Label "${p.text}"${nav}.`
+      return `Button ${pos} mit Label "${p.text}"${interInline}.`
     case 'input':
       return `Texteingabefeld ${pos}, Platzhalter "${p.placeholder}".`
     case 'searchBar':
       return `Suchleiste ${pos}, Platzhalter "${p.placeholder}".`
     case 'label':
-      return `Überschrift/Label ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).`
+      return `Label/Überschrift ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).${interNote}`
     case 'image': {
       const desc = p.description?.trim()
       const ocr = p.ocrText?.trim()
+      let base: string
       if (ocr) {
-        return (
+        base =
           `Vom Nutzer hochgeladenes UI-Mockup ${pos} — verwende es als visuelle Vorlage und baue das gezeigte UI nach.` +
           (desc ? ` Inhalt: ${desc}.` : '') +
           `\n\nIm Bild erkannter Text/Inhalt:\n\n\`\`\`\n${ocr}\n\`\`\``
-        )
+      } else if (desc) {
+        base = `Bild-Platzhalter ${pos} — zeigt: ${desc}.`
+      } else {
+        base = `Bild-Platzhalter ${pos} (Bild vom Nutzer; Inhalt nicht näher beschrieben).`
       }
-      if (desc) return `Bild-Platzhalter ${pos} — zeigt: ${desc}.`
-      return `Bild-Platzhalter ${pos} (Bild vom Nutzer; Inhalt nicht näher beschrieben).`
+      return base + interNote
     }
     case 'card':
-      return `Card ${pos} mit Titel "${p.text}".`
+      return `Card ${pos} mit Titel "${p.text}"${interInline}.`
     case 'list':
       return `Liste ${pos} mit Beispiel-Einträgen: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
     case 'icon':
-      return `Icon ${pos}: "${p.icon}"${nav}.`
+      return `Icon ${pos}: "${p.icon}"${interInline}.`
     case 'toggle':
       return `Toggle/Switch ${pos}: "${p.text}" (Standard: ${p.value ? 'an' : 'aus'}).`
     default:
@@ -169,16 +188,19 @@ export function generatePrompt(project: Project): string {
   out.push('')
   project.screens.forEach((s, i) => out.push(...screenSection(s, i, project)))
 
-  // Navigation overview
-  const navEdges = project.screens.flatMap((s) =>
-    s.nodes
-      .filter((n) => n.props.navigateTo)
-      .map((n) => `- Auf Screen „${s.name}": ${n.type} „${n.props.text ?? n.props.icon ?? n.type}" → „${screenName(project, n.props.navigateTo)}"`),
+  // Navigation overview: all screen→screen connections + external actions.
+  const edges = getEdges(project)
+  const externals = project.screens.flatMap((s) =>
+    s.nodes.flatMap((n) => {
+      const it = getInteraction(n)
+      return it?.kind === 'external' && it.text ? [`- Screen „${s.name}", Element „${nodeLabel(n)}" → externe Aktion: „${it.text}"`] : []
+    }),
   )
-  if (navEdges.length) {
+  if (edges.length || externals.length) {
     out.push('## Navigation')
     out.push('')
-    out.push(...navEdges)
+    edges.forEach((e) => out.push(`- Screen „${screenName(project, e.fromScreenId)}", Element „${e.fromLabel}" → Screen „${screenName(project, e.toScreenId)}"`))
+    externals.forEach((line) => out.push(line))
     out.push('')
   }
 

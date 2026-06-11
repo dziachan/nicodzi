@@ -33,7 +33,11 @@ export interface NodeProps {
   description?: string // free-text "what does this image show?"
   items?: string[] // list / bottomNav entries
   value?: boolean // toggle state
-  navigateTo?: string | null // target screen id on tap
+  // Interactivity
+  clickable?: boolean // explicitly marked as tappable
+  linkKind?: 'screen' | 'external' // target type when clickable
+  navigateTo?: string | null // target screen id (linkKind 'screen')
+  externalAction?: string // free-text description (linkKind 'external')
   // Shape styling (rectangle / ellipse / line)
   borderColor?: string
   borderWidth?: number

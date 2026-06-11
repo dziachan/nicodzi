@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useStore } from '../store'
+import { getInteraction } from '../interactions'
 import type { ComponentNode } from '../types'
 
 interface Props {
@@ -21,8 +22,11 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
   const updateNode = useStore((s) => s.updateNode)
   const deleteNode = useStore((s) => s.deleteNode)
   const checkpoint = useStore((s) => s.checkpoint)
+  const interaction = getInteraction(node)
   const targetName = useStore((s) =>
-    node.props.navigateTo ? s.project.screens.find((sc) => sc.id === node.props.navigateTo)?.name ?? null : null,
+    interaction?.kind === 'screen' && interaction.screenId
+      ? s.project.screens.find((sc) => sc.id === interaction.screenId)?.name ?? null
+      : null,
   )
 
   const drag = useRef<{ mode: 'move' | 'resize'; px: number; py: number; start: ComponentNode; committed: boolean } | null>(null)
@@ -77,7 +81,14 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
       onPointerDown={begin('move')}
       onClick={(e) => e.stopPropagation()}
     >
-      {targetName && <span className="nav-badge">→ {targetName}</span>}
+      {interaction && (
+        <>
+          <span className="tap-badge" title="Anklickbar">👆</span>
+          <span className="nav-badge">
+            {interaction.kind === 'external' ? `↗ ${interaction.text || 'Aktion'}` : `→ ${targetName ?? 'kein Ziel'}`}
+          </span>
+        </>
+      )}
       {node.type === 'image' && node.props.ocrText && <span className="ocr-badge done">Text übernommen ✓</span>}
 
       {selected && (
