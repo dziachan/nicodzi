@@ -1,16 +1,24 @@
 # Phorge — Mobile Design Editor → Prompt
 
-Phorge ist ein visueller Design-Editor für mobile Apps. Du gestaltest ein leeres
-Handy per Klick zu deinem Wunsch-Layout — Komponenten, Farben, Schrift, Stil —
-und Phorge wandelt das Design in einen **fertigen Prompt fürs Vibe-Coding** um.
-Diesen Prompt fügst du in Claude, Cursor, v0 o. Ä. ein, damit deine App von
-Anfang an modern und aufgeräumt aussieht.
+Phorge ist ein **Browser-Tool für PC & Mac** (läuft im Browser, keine
+Installation nötig) zum visuellen Gestalten von mobilen Apps. Du legst beliebig
+viele leere Handy-Screens **nebeneinander** an — Hauptseite, Einstellungen,
+Profil usw. — und gestaltest sie gleichzeitig per Klick zu deinem Wunsch-Layout
+(Komponenten, Farben, Schrift, Stil). Phorge wandelt das Design dann in einen
+**fertigen Prompt fürs Vibe-Coding** um. Diesen Prompt fügst du in Claude,
+Cursor, v0 o. Ä. ein, damit deine App von Anfang an modern und aufgeräumt
+aussieht.
 
 ## Was du machen kannst
 
-- **Leeres Handy gestalten:** Komponenten aus der linken Palette per Klick
-  hinzufügen (Überschrift, Text, Button, Bild, Eingabefeld, Karte, Liste,
-  Badge, Profil, Trennlinie, Abstand).
+- **Mehrere Screens nebeneinander:** Alle Handy-Screens liegen gleichzeitig auf
+  der Fläche (wie Artboards). Das aktive Handy ist hervorgehoben; ein Klick auf
+  ein Handy oder seinen Namen macht es aktiv. „Neuer Screen" legt ein weiteres an.
+- **Leeres Handy gestalten:** Komponenten aus der linken Palette per Klick zum
+  aktiven Handy hinzufügen (Überschrift, Text, Button, Bild, Eingabefeld, Karte,
+  Liste, Badge, Profil, Trennlinie, Abstand).
+- **Bilder per Drag & Drop:** PNG/JPEG direkt auf ein Handy ziehen, dann frei
+  verschieben, an der Ecke skalieren und am Griff drehen.
 - **Live bearbeiten:** Jedes Element auswählen und rechts seine Eigenschaften
   ändern (Text, Ausrichtung, Schriftgröße/-stärke, Radius, Variante …).
   Elemente per Pfeil-Buttons sortieren oder löschen.

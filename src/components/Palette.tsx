@@ -17,8 +17,8 @@ function fileToLayer(file: File): Promise<Omit<ImageLayer, 'id'>> {
         const ratio = probe.naturalWidth / probe.naturalHeight || 1
         const width = ratio >= 1 ? MAX_INITIAL : MAX_INITIAL * ratio
         const height = ratio >= 1 ? MAX_INITIAL / ratio : MAX_INITIAL
-        // Drop roughly in the upper-middle of the 300px-wide screen body.
-        resolve({ src, name: file.name, x: 150 - width / 2, y: 120 - height / 2, width, height, rotation: 0 })
+        // Drop roughly in the upper-middle of the ~280px-wide screen body.
+        resolve({ src, name: file.name, x: 140 - width / 2, y: 120 - height / 2, width, height, rotation: 0 })
       }
       probe.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'))
       probe.src = src

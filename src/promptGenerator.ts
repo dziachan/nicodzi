@@ -104,7 +104,7 @@ export function generatePrompt(project: Project): string {
         const cx = Math.round(im.x + im.width / 2)
         const cy = Math.round(im.y + im.height / 2)
         lines.push(
-          `${idx + 1}. "${im.name}" — ca. ${Math.round(im.width)}×${Math.round(im.height)}px, Mittelpunkt ungefähr bei (${cx}, ${cy}) im Screen (~300px breit)${im.rotation ? `, um ${im.rotation}° gedreht` : ''}.`,
+          `${idx + 1}. "${im.name}" — ca. ${Math.round(im.width)}×${Math.round(im.height)}px, Mittelpunkt ungefähr bei (${cx}, ${cy}) im Screen (~280px breit)${im.rotation ? `, um ${im.rotation}° gedreht` : ''}.`,
         )
       })
       lines.push('')

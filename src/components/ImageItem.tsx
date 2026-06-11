@@ -4,6 +4,7 @@ import type { ImageLayer } from '../types'
 
 interface Props {
   img: ImageLayer
+  screenId: string
   selected: boolean
   layerRef: React.RefObject<HTMLDivElement>
 }
@@ -12,9 +13,10 @@ type Mode = 'move' | 'resize' | 'rotate'
 
 const MIN_SIZE = 24
 
-export default function ImageItem({ img, selected, layerRef }: Props) {
+export default function ImageItem({ img, screenId, selected, layerRef }: Props) {
   const updateImage = useStore((s) => s.updateImage)
   const selectImage = useStore((s) => s.selectImage)
+  const setActiveScreen = useStore((s) => s.setActiveScreen)
   const bringToFront = useStore((s) => s.bringImageToFront)
   const deleteImage = useStore((s) => s.deleteImage)
 
@@ -35,6 +37,7 @@ export default function ImageItem({ img, selected, layerRef }: Props) {
   const begin = (mode: Mode) => (e: React.PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    setActiveScreen(screenId) // ensure edits target this screen
     selectImage(img.id)
     bringToFront(img.id)
     const p = pointerInLayer(e)

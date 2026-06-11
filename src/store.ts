@@ -84,6 +84,22 @@ function normalizeProject(p: Project): Project {
   }
 }
 
+function settingsScreen(): Screen {
+  return {
+    id: uid(),
+    name: 'Einstellungen',
+    elements: [
+      { id: uid(), type: 'header', props: { ...defaultProps('header'), text: 'Einstellungen', subtitle: 'Verwalte dein Konto' } },
+      { id: uid(), type: 'avatar', props: defaultProps('avatar') },
+      { id: uid(), type: 'divider', props: {} },
+      { id: uid(), type: 'listItem', props: { ...defaultProps('listItem'), text: 'Benachrichtigungen', subtitle: 'Push & E-Mail', icon: '🔔' } },
+      { id: uid(), type: 'listItem', props: { ...defaultProps('listItem'), text: 'Datenschutz', subtitle: 'Sichtbarkeit', icon: '🔒' } },
+      { id: uid(), type: 'listItem', props: { ...defaultProps('listItem'), text: 'Darstellung', subtitle: 'Hell / Dunkel', icon: '🎨' } },
+    ],
+    images: [],
+  }
+}
+
 const initialProject: Project = {
   appName: 'Meine App',
   tagline: 'Eine moderne mobile Anwendung',
@@ -92,7 +108,7 @@ const initialProject: Project = {
   showTabBar: true,
   tabs: ['Home', 'Suche', 'Profil'],
   theme: defaultTheme,
-  screens: [starterScreen()],
+  screens: [starterScreen(), settingsScreen()],
 }
 
 interface StoreState {
