@@ -1,34 +1,34 @@
 # Phorge — Mobile Design Editor → Prompt
 
 Phorge ist ein **Browser-Tool für PC & Mac** (läuft im Browser, keine
-Installation nötig) zum visuellen Gestalten von mobilen Apps. Du legst beliebig
-viele leere Handy-Screens **nebeneinander** an — Hauptseite, Einstellungen,
-Profil usw. — und gestaltest sie gleichzeitig per Klick zu deinem Wunsch-Layout
-(Komponenten, Farben, Schrift, Stil). Phorge wandelt das Design dann in einen
-**fertigen Prompt fürs Vibe-Coding** um. Diesen Prompt fügst du in Claude,
-Cursor, v0 o. Ä. ein, damit deine App von Anfang an modern und aufgeräumt
-aussieht.
+Installation nötig) zum visuellen Gestalten von mobilen Apps. Du baust mehrere
+Handy-Screens (Login, Home, Profil …), platzierst Komponenten frei per Drag &
+Drop, definierst zentrale Design-Tokens — und exportierst daraus eine
+**vollständige Build-Anleitung für Claude Code**, mit der eine komplett
+funktionierende App entsteht (nicht nur das Design).
 
 ## Was du machen kannst
 
-- **Mehrere Screens nebeneinander:** Alle Handy-Screens liegen gleichzeitig auf
-  der Fläche (wie Artboards). Das aktive Handy ist hervorgehoben; ein Klick auf
-  ein Handy oder seinen Namen macht es aktiv. „Neuer Screen" legt ein weiteres an.
-- **Leeres Handy gestalten:** Komponenten aus der linken Palette per Klick zum
-  aktiven Handy hinzufügen (Überschrift, Text, Button, Bild, Eingabefeld, Karte,
-  Liste, Badge, Profil, Trennlinie, Abstand).
-- **Bilder per Drag & Drop:** PNG/JPEG direkt auf ein Handy ziehen, dann frei
-  verschieben, an der Ecke skalieren und am Griff drehen.
-- **Live bearbeiten:** Jedes Element auswählen und rechts seine Eigenschaften
-  ändern (Text, Ausrichtung, Schriftgröße/-stärke, Radius, Variante …).
-  Elemente per Pfeil-Buttons sortieren oder löschen.
-- **Theme & Stil:** Farbpalette, Schriftart, Eckenradius, Dark/Light-Modus und
-  Stil-Presets (Minimal, Glass, Neumorph, Bold, Playful) festlegen.
-- **Mehrere Screens:** Beliebig viele Screens anlegen und benennen, plus
-  globale Statusleiste und Tab-Bar.
-- **Prompt generieren:** Ein Klick auf „✨ Prompt generieren" erzeugt einen
-  strukturierten, KI-tauglichen Prompt, den du direkt kopieren kannst.
-- **Export / Import:** Dein Projekt als JSON sichern und wieder laden.
+- **Multi-Screen:** Beliebig viele Screens anlegen, benennen, duplizieren und
+  löschen. Alle Screens liegen als Thumbnails nebeneinander; Klick öffnet einen
+  Screen im Editor. Navigation definierbar (z. B. Button „Anmelden" → Screen
+  „Home").
+- **Komponenten-Bibliothek:** Button, Textfeld, Überschrift, Bild-Platzhalter,
+  Card, Liste, Bottom-Navigation, Top-Bar, Icon, Toggle/Switch, Suchleiste —
+  per Klick oder Drag platzierbar, frei verschieb-, skalier- und löschbar.
+- **Eigenschaften-Panel:** Text, Farben, Schriftgröße, Eckenradius, Ausrichtung,
+  Position/Größe und Navigationsziel je Komponente.
+- **Globale Design-Tokens:** Primär-/Sekundär-/Hintergrund-/Textfarbe, Schriftart,
+  Basis-Schriftgröße, globaler Eckenradius und Abstands-Raster (4/8px) — wirken
+  sofort auf alle Screens. Plus Presets: Minimal Light, Dark Mode, Playful,
+  Corporate.
+- **Bilder per Drag & Drop:** PNG/JPEG direkt auf einen Screen ziehen.
+- **Prompt-Export:** Erzeugt eine vollständige Markdown-Bauanleitung inkl.
+  Design-Tokens, Screen-Layouts, Navigation und automatisch abgeleiteten
+  Funktionalitäts-Anweisungen (Login, Listen-CRUD, Live-Suche, Toggle-Persistenz
+  …) plus optionalem Freitext „Was soll die App können?". Copy-Button + .md-Download.
+- **Quality of Life:** Undo/Redo (40 Schritte, Ctrl+Z / Ctrl+Y), Auto-Speicherung
+  im localStorage, Zoom (50/75/100 %), iPhone-/Android-Rahmen.
 
 ## Starten
 

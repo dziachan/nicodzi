@@ -17,7 +17,6 @@ export default function PromptModal({ onClose }: { onClose: () => void }) {
     try {
       await navigator.clipboard.writeText(prompt)
     } catch {
-      // Fallback for environments without clipboard API
       const ta = document.createElement('textarea')
       ta.value = prompt
       document.body.appendChild(ta)
@@ -29,18 +28,29 @@ export default function PromptModal({ onClose }: { onClose: () => void }) {
     setTimeout(() => setCopied(false), 1800)
   }
 
+  const download = () => {
+    const blob = new Blob([prompt], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${project.appName.replace(/\s+/g, '-').toLowerCase() || 'app'}-prompt.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="modal-title">✨ Dein Vibe-Coding Prompt</div>
-            <div className="hint">Kopiere das in Claude, Cursor, v0 o. Ä. — und deine App sieht modern aus.</div>
+            <div className="modal-title">✨ Build-Prompt für Claude Code</div>
+            <div className="hint">Vollständige Bauanleitung — in Claude Code einfügen, fertige App entsteht.</div>
           </div>
           <button className="btn" onClick={onClose}>Schließen</button>
         </div>
         <pre className="prompt-out">{prompt}</pre>
         <div className="modal-foot">
+          <button className="btn" onClick={download}>⬇ .md herunterladen</button>
           <button className="btn primary" onClick={copy}>{copied ? '✓ Kopiert!' : 'In Zwischenablage kopieren'}</button>
         </div>
       </div>

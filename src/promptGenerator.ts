@@ -1,122 +1,179 @@
-import type { DesignElement, Project, Theme } from './types'
+import { SCREEN_H, SCREEN_W } from './constants'
+import type { ComponentNode, Project, Screen } from './types'
 
-const styleGuidance: Record<Theme['style'], string> = {
-  minimal: 'Cleanes, minimalistisches Design mit viel Weißraum, dezenten Schatten und klaren Kanten.',
-  glass: 'Glassmorphism: durchscheinende Flächen mit Blur (backdrop-filter), feinen Rändern und leuchtenden Akzenten.',
-  neumorph: 'Neumorphismus: weiche, plastische Flächen mit doppelten Schatten (hell/dunkel) auf einfarbigem Hintergrund.',
-  bold: 'Bold & kontrastreich: kräftige Farben, große Typografie, klare Hierarchie und auffällige CTAs.',
-  playful: 'Verspielt & freundlich: abgerundete Formen, lebendige Farben, sanfte Animationen und Emojis/Illustrationen.',
+const screenName = (project: Project, id?: string | null) =>
+  id ? project.screens.find((s) => s.id === id)?.name ?? null : null
+
+/** Vertical region of a node, for human-readable positioning in the prompt. */
+function region(node: ComponentNode): string {
+  const cy = node.y + node.h / 2
+  const v = cy < SCREEN_H / 3 ? 'oben' : cy < (SCREEN_H * 2) / 3 ? 'mittig' : 'unten'
+  const cx = node.x + node.w / 2
+  const h = cx < SCREEN_W / 3 ? 'links' : cx < (SCREEN_W * 2) / 3 ? 'zentriert' : 'rechts'
+  return `${v}/${h}`
 }
 
-function describeElement(el: DesignElement): string {
-  const p = el.props
-  const align = p.align ? ` (${p.align}-ausgerichtet)` : ''
-  switch (el.type) {
-    case 'header':
-      return `Überschrift "${p.text}"${p.subtitle ? ` mit Untertitel "${p.subtitle}"` : ''}${align}, Schriftgröße ~${p.fontSize}px, Gewicht ${p.fontWeight}.`
-    case 'text':
-      return `Fließtext: "${p.text}"${align}.`
+function describeNode(node: ComponentNode, project: Project): string {
+  const p = node.props
+  const pos = `[${region(node)}, ${Math.round(node.w)}×${Math.round(node.h)}px]`
+  const nav = p.navigateTo ? ` → bei Tap Navigation zu Screen "${screenName(project, p.navigateTo)}"` : ''
+  switch (node.type) {
+    case 'topBar':
+      return `Top-Bar/Header ${pos} mit Titel "${p.text}".`
+    case 'bottomNav':
+      return `Bottom-Navigation ${pos} mit Tabs: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
     case 'button':
-      return `${p.variant ?? 'primary'}-Button mit Label "${p.text}"${p.fullWidth ? ', volle Breite' : ''}, abgerundete Ecken (${p.radius ?? 'theme'}px).`
-    case 'image':
-      return `Bild-/Medienfläche, Höhe ~${p.height}px, Eckenradius ${p.radius}px (Platzhalter für ein Foto oder eine Illustration).`
+      return `Button ${pos} mit Label "${p.text}"${nav}.`
     case 'input':
-      return `Texteingabefeld mit Platzhalter "${p.placeholder}", abgerundet (${p.radius}px).`
+      return `Texteingabefeld ${pos}, Platzhalter "${p.placeholder}".`
+    case 'searchBar':
+      return `Suchleiste ${pos}, Platzhalter "${p.placeholder}".`
+    case 'label':
+      return `Überschrift/Label ${pos}: "${p.text}" (Schriftgröße ~${p.fontSize ?? 'Basis'}px).`
+    case 'image':
+      return `Bild${p.src ? ' (vom Nutzer hochgeladen)' : '-Platzhalter'} ${pos}.`
     case 'card':
-      return `Karte mit Titel "${p.text}" und Untertitel "${p.subtitle}", erhöht über Schatten, Eckenradius ${p.radius}px.`
-    case 'listItem':
-      return `Listeneintrag "${p.text}"${p.subtitle ? ` / "${p.subtitle}"` : ''} mit führendem Icon "${p.icon}".`
-    case 'badge':
-      return `Badge/Chip mit Text "${p.text}" (${p.variant ?? 'primary'}).`
-    case 'avatar':
-      return `Profilzeile: Avatar (${p.height}px) neben Name "${p.text}" und Status "${p.subtitle}".`
-    case 'divider':
-      return `Horizontale Trennlinie.`
-    case 'spacer':
-      return `Vertikaler Abstand (~${p.height}px).`
+      return `Card ${pos} mit Titel "${p.text}".`
+    case 'list':
+      return `Liste ${pos} mit Beispiel-Einträgen: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
+    case 'icon':
+      return `Icon ${pos}: "${p.icon}"${nav}.`
+    case 'toggle':
+      return `Toggle/Switch ${pos}: "${p.text}" (Standard: ${p.value ? 'an' : 'aus'}).`
     default:
-      return el.type
+      return `${node.type} ${pos}.`
   }
 }
 
-/** Builds a rich, AI-ready prompt that describes the whole design. */
-export function generatePrompt(project: Project): string {
-  const { theme } = project
-  const lines: string[] = []
+interface Inventory {
+  hasLogin: boolean
+  hasList: boolean
+  hasSearch: boolean
+  hasToggle: boolean
+  hasBottomNav: boolean
+  hasForm: boolean
+}
 
-  lines.push(`# Baue die mobile App "${project.appName}"`)
-  lines.push('')
-  lines.push(project.tagline ? `> ${project.tagline}` : '')
-  lines.push('')
-  lines.push(
-    `Erstelle eine moderne, gut aussehende mobile App (${project.device === 'iphone' ? 'iOS / iPhone' : 'Android'}-Stil). ` +
-      `Halte dich exakt an das folgende Design-System und die Screen-Layouts. Setze es sauber, responsiv und pixel-genau um.`,
+function analyze(project: Project): Inventory {
+  const all = project.screens.flatMap((s) => s.nodes)
+  const types = new Set(all.map((n) => n.type))
+  const loginByName = project.screens.some((s) => /login|anmeld|sign\s?in/i.test(s.name))
+  const loginByShape = project.screens.some(
+    (s) => s.nodes.some((n) => n.type === 'input') && s.nodes.some((n) => n.type === 'button'),
   )
-  lines.push('')
-
-  lines.push('## Design-System')
-  lines.push('')
-  lines.push(`- **Stil:** ${styleGuidance[theme.style]}`)
-  lines.push(`- **Modus:** ${theme.mode === 'dark' ? 'Dark Mode' : 'Light Mode'}`)
-  lines.push(`- **Schrift:** ${theme.fontFamily} (System-Fallbacks erlaubt)`)
-  lines.push(`- **Eckenradius (global):** ${theme.radius}px`)
-  lines.push('- **Farbpalette:**')
-  lines.push(`  - Primär: \`${theme.primary}\``)
-  lines.push(`  - Akzent: \`${theme.accent}\``)
-  lines.push(`  - Hintergrund: \`${theme.background}\``)
-  lines.push(`  - Flächen/Karten: \`${theme.surface}\``)
-  lines.push(`  - Text: \`${theme.text}\``)
-  lines.push(`  - Gedämpfter Text: \`${theme.muted}\``)
-  lines.push('')
-
-  lines.push('## Globale Struktur')
-  lines.push('')
-  lines.push(`- Statusleiste: ${project.showStatusBar ? 'sichtbar' : 'ausgeblendet'}`)
-  if (project.showTabBar) {
-    lines.push(`- Untere Tab-Bar mit den Tabs: ${project.tabs.map((t) => `**${t}**`).join(', ')}`)
-  } else {
-    lines.push('- Keine Tab-Bar')
+  return {
+    hasLogin: loginByName || loginByShape,
+    hasList: types.has('list'),
+    hasSearch: types.has('searchBar'),
+    hasToggle: types.has('toggle'),
+    hasBottomNav: types.has('bottomNav'),
+    hasForm: types.has('input'),
   }
-  lines.push(`- Anzahl Screens: ${project.screens.length}`)
-  lines.push('')
+}
 
-  lines.push('## Screens')
-  lines.push('')
-  project.screens.forEach((screen, i) => {
-    lines.push(`### ${i + 1}. Screen: "${screen.name}"`)
-    if (screen.elements.length === 0) {
-      lines.push('_(leer)_')
-      lines.push('')
-      return
-    }
-    if (screen.elements.length > 0) {
-      lines.push('Elemente von oben nach unten:')
-      lines.push('')
-      screen.elements.forEach((el, idx) => {
-        lines.push(`${idx + 1}. ${describeElement(el)}`)
-      })
-      lines.push('')
-    }
-    if (screen.images.length > 0) {
-      lines.push(`Freigestellte Bild-Assets (${screen.images.length}), frei positioniert:`)
-      lines.push('')
-      screen.images.forEach((im, idx) => {
-        const cx = Math.round(im.x + im.width / 2)
-        const cy = Math.round(im.y + im.height / 2)
-        lines.push(
-          `${idx + 1}. "${im.name}" — ca. ${Math.round(im.width)}×${Math.round(im.height)}px, Mittelpunkt ungefähr bei (${cx}, ${cy}) im Screen (~280px breit)${im.rotation ? `, um ${im.rotation}° gedreht` : ''}.`,
-        )
-      })
-      lines.push('')
-    }
-  })
+function functionalitySection(inv: Inventory): string[] {
+  const lines: string[] = []
+  if (inv.hasLogin)
+    lines.push(
+      '- **Anmeldung:** Implementiere eine funktionierende Login-Logik mit Eingabe-Validierung (Pflichtfelder, E-Mail-Format, Fehlermeldungen). Nach erfolgreichem Login wird zum Ziel-Screen navigiert; der Login-Zustand bleibt erhalten (z. B. localStorage).',
+    )
+  if (inv.hasList)
+    lines.push(
+      '- **Listen:** Listen sollen Einträge anzeigen sowie das Hinzufügen und Löschen von Einträgen erlauben. Speichere die Daten persistent (localStorage), sodass sie nach Reload erhalten bleiben.',
+    )
+  if (inv.hasSearch)
+    lines.push('- **Suche:** Die Suchleiste filtert die zugehörigen Listeninhalte live während der Eingabe.')
+  if (inv.hasToggle)
+    lines.push('- **Schalter:** Jeder Toggle speichert seinen Zustand persistent und wirkt sich sichtbar auf die App aus.')
+  if (inv.hasForm)
+    lines.push('- **Formulare:** Alle Eingabefelder sind kontrolliert, mit sinnvoller Validierung und Feedback.')
+  if (inv.hasBottomNav)
+    lines.push('- **Navigation:** Die Bottom-Navigation wechselt zwischen den Haupt-Screens (clientseitiges Routing).')
+  lines.push('- **Zustand & Persistenz:** Halte den App-Zustand konsistent und speichere relevante Daten lokal.')
+  return lines
+}
 
-  lines.push('## Umsetzungs-Hinweise')
+function screenSection(screen: Screen, index: number, project: Project): string[] {
+  const lines = [`### ${index + 1}. Screen: „${screen.name}"`]
+  if (screen.nodes.length === 0) {
+    lines.push('_(leer)_', '')
+    return lines
+  }
+  const ordered = [...screen.nodes].sort((a, b) => a.y - b.y)
+  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project)}`))
   lines.push('')
-  lines.push('- Nutze konsistente Abstände (8pt-Raster) und die oben definierten Farb-Tokens als Variablen.')
-  lines.push('- Achte auf gute Lesbarkeit, ausreichende Touch-Targets (min. 44px) und sanfte Übergänge.')
-  lines.push('- Verwende echte Komponenten statt fester Pixelwerte, wo sinnvoll, und halte das Layout responsiv.')
-  lines.push('- Liefere am Ende ein modernes, aufgeräumtes Ergebnis, das exakt dem beschriebenen Look entspricht.')
+  return lines
+}
 
-  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
+/** Builds the full, AI-ready Markdown build specification. */
+export function generatePrompt(project: Project): string {
+  const t = project.tokens
+  const inv = analyze(project)
+  const out: string[] = []
+
+  out.push(
+    'Baue eine vollständige, produktionsreife mobile Web-App exakt nach folgender Spezifikation. ' +
+      'Implementiere neben dem UI auch die komplette Funktionalität (nicht nur das Design).',
+  )
+  out.push('')
+  out.push(`# App: ${project.appName}`)
+  out.push('')
+
+  if (project.appDescription.trim()) {
+    out.push('## Was die App können soll')
+    out.push('')
+    out.push('> ' + project.appDescription.trim().replace(/\n/g, '\n> '))
+    out.push('')
+  }
+
+  out.push('## Design-Tokens (exakt einhalten)')
+  out.push('')
+  out.push(`- **Primärfarbe:** \`${t.primary}\``)
+  out.push(`- **Sekundärfarbe:** \`${t.secondary}\``)
+  out.push(`- **Hintergrund:** \`${t.background}\``)
+  out.push(`- **Textfarbe:** \`${t.text}\``)
+  out.push(`- **Schriftart:** ${t.fontFamily} (mit System-Fallbacks)`)
+  out.push(`- **Basis-Schriftgröße:** ${t.baseFontSize}px`)
+  out.push(`- **Globaler Eckenradius:** ${t.radius}px`)
+  out.push(`- **Abstands-Raster:** ${t.spacing}px (alle Abstände als Vielfache verwenden)`)
+  out.push(`- **Geräte-Rahmen:** ${project.device === 'iphone' ? 'iOS / iPhone' : 'Android'}-Stil`)
+  out.push('')
+
+  out.push('## Screens & Layout')
+  out.push('')
+  out.push(`Die App hat ${project.screens.length} Screen(s). Positionsangaben in der Form [vertikal/horizontal].`)
+  out.push('')
+  project.screens.forEach((s, i) => out.push(...screenSection(s, i, project)))
+
+  // Navigation overview
+  const navEdges = project.screens.flatMap((s) =>
+    s.nodes
+      .filter((n) => n.props.navigateTo)
+      .map((n) => `- Auf Screen „${s.name}": ${n.type} „${n.props.text ?? n.props.icon ?? n.type}" → „${screenName(project, n.props.navigateTo)}"`),
+  )
+  if (navEdges.length) {
+    out.push('## Navigation')
+    out.push('')
+    out.push(...navEdges)
+    out.push('')
+  }
+
+  out.push('## Funktionalität (zwingend implementieren)')
+  out.push('')
+  out.push(...functionalitySection(inv))
+  out.push('')
+
+  out.push('## Technische Vorgaben')
+  out.push('')
+  out.push('- Saubere, komponentenbasierte Umsetzung; responsives, mobil-zentriertes Layout.')
+  out.push('- Verwende die Design-Tokens als zentrale CSS-Variablen / Theme-Konstanten.')
+  out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px), sanfte Übergänge.')
+  out.push('')
+
+  out.push('## Abschluss')
+  out.push('')
+  out.push('- Teste, dass der Build fehlerfrei durchläuft.')
+  out.push('- Merge das Ergebnis in den main-Branch.')
+
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
 }
