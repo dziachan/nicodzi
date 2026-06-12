@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../store'
 import { FRAME_H, FRAME_W, SCREEN_H, SCREEN_W } from '../constants'
+import { SAFE_BOTTOM, SAFE_TOP } from '../layout'
 import CanvasNode from './CanvasNode'
 import NodeView from './NodeView'
 import type { ComponentType } from '../types'
@@ -69,6 +70,10 @@ export default function PhoneEditor() {
             className={`phone-screen ${over ? 'drag-over' : ''}`}
             style={{ width: SCREEN_W, height: SCREEN_H, background: screen.background ?? tokens.background, fontFamily: `'${tokens.fontFamily}', system-ui, sans-serif`, fontSize: tokens.baseFontSize }}
           >
+            {/* Safe-area guides (dashed) */}
+            <div className="safe-line" style={{ top: SAFE_TOP }} />
+            <div className="safe-line" style={{ top: SCREEN_H - SAFE_BOTTOM }} />
+
             {screen.nodes.length === 0 && (
               <div className="screen-empty" style={{ color: `${tokens.text}88` }}>
                 Komponente per Klick hinzufügen<br />oder hierher ziehen

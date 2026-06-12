@@ -48,6 +48,15 @@ export interface NodeProps {
   borderWidth?: number
   opacity?: number // 0..1
   rotation?: number // degrees
+  // Anchor-based layout
+  anchorV?: 'top' | 'center' | 'bottom'
+  anchorH?: 'left' | 'center' | 'right'
+  widthMode?: 'fixed' | 'percent' | 'inset'
+  widthPercent?: number
+  inset?: number
+  heightMode?: 'fixed' | 'percent' | 'auto'
+  heightPercent?: number
+  keepAspect?: boolean
 }
 
 export interface ComponentNode {

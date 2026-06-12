@@ -1,6 +1,8 @@
 import { componentLabel, useStore } from '../store'
 import ImageOcr from './ImageOcr'
 import IconPicker from './IconPicker'
+import { SCREEN_H, SCREEN_W } from '../constants'
+import { anchorH, anchorV, offsetH, offsetV, xForOffset, yForOffset } from '../layout'
 import { isShape, type ComponentNode } from '../types'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -57,6 +59,41 @@ export default function Inspector({ node }: { node: ComponentNode }) {
       </div>
     </Field>
   )
+
+  // ---- Anchor & flexible size ----
+  const aV = anchorV(node)
+  const aH = anchorH(node)
+  const oV = offsetV(node, aV)
+  const oH = offsetH(node, aH)
+  const wMode = p.widthMode ?? 'fixed'
+  const hMode = p.heightMode ?? 'fixed'
+
+  const setWMode = (m: 'fixed' | 'percent' | 'inset') => {
+    if (m === 'percent') {
+      const pct = p.widthPercent ?? Math.round((node.w / SCREEN_W) * 100)
+      setNode(node.id, { w: Math.round((SCREEN_W * pct) / 100), props: { ...p, widthMode: 'percent', widthPercent: pct } })
+    } else if (m === 'inset') {
+      const ins = p.inset ?? Math.round(node.x)
+      setNode(node.id, { x: ins, w: Math.max(1, SCREEN_W - 2 * ins), props: { ...p, widthMode: 'inset', inset: ins } })
+    } else {
+      sp({ widthMode: 'fixed' })
+    }
+  }
+  const setWidthPercent = (pct: number) =>
+    setNode(node.id, { w: Math.round((SCREEN_W * pct) / 100), props: { ...p, widthMode: 'percent', widthPercent: pct } })
+  const setInset = (ins: number) =>
+    setNode(node.id, { x: ins, w: Math.max(1, SCREEN_W - 2 * ins), props: { ...p, widthMode: 'inset', inset: ins } })
+
+  const setHMode = (m: 'fixed' | 'percent' | 'auto') => {
+    if (m === 'percent') {
+      const pct = p.heightPercent ?? Math.round((node.h / SCREEN_H) * 100)
+      setNode(node.id, { h: Math.round((SCREEN_H * pct) / 100), props: { ...p, heightMode: 'percent', heightPercent: pct } })
+    } else {
+      sp({ heightMode: m })
+    }
+  }
+  const setHeightPercent = (pct: number) =>
+    setNode(node.id, { h: Math.round((SCREEN_H * pct) / 100), props: { ...p, heightMode: 'percent', heightPercent: pct } })
 
   return (
     <div className="inspector-body">
@@ -256,13 +293,74 @@ export default function Inspector({ node }: { node: ComponentNode }) {
         <button className="btn" onClick={() => reorderNode(node.id, 'back')} title="Ganz nach hinten">⤓</button>
       </div>
 
-      <div className="inspector-group">Position & Größe</div>
-      <div className="grid2">
-        <Field label="X"><input type="number" value={Math.round(node.x)} onChange={(e) => setNode(node.id, { x: +e.target.value })} /></Field>
-        <Field label="Y"><input type="number" value={Math.round(node.y)} onChange={(e) => setNode(node.id, { y: +e.target.value })} /></Field>
-        <Field label="Breite"><input type="number" value={Math.round(node.w)} onChange={(e) => setNode(node.id, { w: +e.target.value })} /></Field>
-        <Field label="Höhe"><input type="number" value={Math.round(node.h)} onChange={(e) => setNode(node.id, { h: +e.target.value })} /></Field>
-      </div>
+      <div className="inspector-group">Anker</div>
+      <Field label="Vertikaler Anker">
+        <select value={aV} onChange={(e) => sp({ anchorV: e.target.value as any })}>
+          <option value="top">Oben</option>
+          <option value="center">Vertikal zentriert</option>
+          <option value="bottom">Unten</option>
+        </select>
+      </Field>
+      <Field label={aV === 'top' ? 'Abstand zur oberen Safe Area (px)' : aV === 'bottom' ? 'Abstand zur unteren Safe Area (px)' : 'Versatz zur Mitte (px)'}>
+        <input type="number" value={oV} onChange={(e) => setNode(node.id, { y: Math.round(yForOffset(node, aV, +e.target.value || 0)) })} />
+      </Field>
+      <Field label="Horizontaler Anker">
+        <select value={aH} onChange={(e) => sp({ anchorH: e.target.value as any })}>
+          <option value="left">Links</option>
+          <option value="center">Horizontal zentriert</option>
+          <option value="right">Rechts</option>
+        </select>
+      </Field>
+      <Field label={aH === 'left' ? 'Abstand vom linken Rand (px)' : aH === 'right' ? 'Abstand vom rechten Rand (px)' : 'Versatz zur Mitte (px)'}>
+        <input type="number" value={oH} onChange={(e) => setNode(node.id, { x: Math.round(xForOffset(node, aH, +e.target.value || 0)) })} />
+      </Field>
+
+      <div className="inspector-group">Größe</div>
+      <Field label="Breite">
+        <select value={wMode} onChange={(e) => setWMode(e.target.value as any)}>
+          <option value="fixed">Fixe px</option>
+          <option value="percent">% der Screen-Breite</option>
+          <option value="inset">An Rändern (Seitenabstand)</option>
+        </select>
+      </Field>
+      {wMode === 'fixed' && (
+        <Field label="Breite (px)">
+          <input type="number" value={Math.round(node.w)} onChange={(e) => setNode(node.id, { w: Math.max(1, +e.target.value || 1) })} />
+        </Field>
+      )}
+      {wMode === 'percent' && (
+        <Field label={`Breite (${p.widthPercent ?? Math.round((node.w / SCREEN_W) * 100)}%)`}>
+          <input type="range" min={10} max={100} value={p.widthPercent ?? Math.round((node.w / SCREEN_W) * 100)} onChange={(e) => setWidthPercent(+e.target.value)} />
+        </Field>
+      )}
+      {wMode === 'inset' && (
+        <Field label="Seitenabstand links & rechts (px)">
+          <input type="number" value={p.inset ?? Math.round(node.x)} onChange={(e) => setInset(Math.max(0, +e.target.value || 0))} />
+        </Field>
+      )}
+      <Field label="Höhe">
+        <select value={hMode} onChange={(e) => setHMode(e.target.value as any)}>
+          <option value="fixed">Fixe px</option>
+          <option value="percent">% der Screen-Höhe</option>
+          <option value="auto">Automatisch (Inhalt)</option>
+        </select>
+      </Field>
+      {hMode === 'fixed' && (
+        <Field label="Höhe (px)">
+          <input type="number" value={Math.round(node.h)} onChange={(e) => setNode(node.id, { h: Math.max(1, +e.target.value || 1) })} />
+        </Field>
+      )}
+      {hMode === 'percent' && (
+        <Field label={`Höhe (${p.heightPercent ?? Math.round((node.h / SCREEN_H) * 100)}%)`}>
+          <input type="range" min={5} max={100} value={p.heightPercent ?? Math.round((node.h / SCREEN_H) * 100)} onChange={(e) => setHeightPercent(+e.target.value)} />
+        </Field>
+      )}
+      {hMode === 'auto' && <div className="hint">Höhe passt sich automatisch dem Inhalt an.</div>}
+      {has('image') && (
+        <Field label="Seitenverhältnis beibehalten">
+          <input type="checkbox" checked={!!p.keepAspect} onChange={(e) => sp({ keepAspect: e.target.checked })} />
+        </Field>
+      )}
 
       <button className="btn danger small" onClick={() => deleteNode(node.id)}>Komponente löschen</button>
     </div>

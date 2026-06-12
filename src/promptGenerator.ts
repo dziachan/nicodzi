@@ -1,5 +1,5 @@
-import { SCREEN_H, SCREEN_W } from './constants'
 import { getEdges, getInteraction, nodeLabel, type Interaction } from './interactions'
+import { geometryDesc } from './layout'
 import type { ComponentNode, Project, Screen } from './types'
 
 const screenName = (project: Project, id?: string | null) =>
@@ -13,18 +13,9 @@ function interactionText(it: Interaction, project: Project): string {
 
 const TOUCH_NOTE = ' Umsetzung als Button mit dem beschriebenen Erscheinungsbild, Touch-Target mindestens 44px.'
 
-/** Vertical region of a node, for human-readable positioning in the prompt. */
-function region(node: ComponentNode): string {
-  const cy = node.y + node.h / 2
-  const v = cy < SCREEN_H / 3 ? 'oben' : cy < (SCREEN_H * 2) / 3 ? 'mittig' : 'unten'
-  const cx = node.x + node.w / 2
-  const h = cx < SCREEN_W / 3 ? 'links' : cx < (SCREEN_W * 2) / 3 ? 'zentriert' : 'rechts'
-  return `${v}/${h}`
-}
-
 function describeNode(node: ComponentNode, project: Project, layer: number): string {
   const p = node.props
-  const pos = `[${region(node)}, ${Math.round(node.w)}×${Math.round(node.h)}px]`
+  const pos = `[${geometryDesc(node)}]`
   const layerInfo = `Ebene ${layer}`
   const rot = p.rotation ? `, um ${p.rotation}° gedreht` : ''
   const op = p.opacity != null && p.opacity < 1 ? `, Deckkraft ${Math.round(p.opacity * 100)}%` : ''
@@ -229,6 +220,8 @@ export function generatePrompt(project: Project): string {
   out.push('')
   out.push('- Saubere, komponentenbasierte Umsetzung; responsives, mobil-zentriertes Layout.')
   out.push('- Verwende die Design-Tokens als zentrale CSS-Variablen / Theme-Konstanten.')
+  out.push('- **Positioniere alle Elemente anker- und Safe-Area-basiert** (Flexbox/Constraints, KEINE festen Pixel-Koordinaten). Respektiere Notch/Status-Bar oben und Home-Indicator unten (env(safe-area-inset-*)).')
+  out.push('- Verwende die angegebenen flexiblen Größen (px, % der Screen-Maße, Rand-Abstände, automatische Höhe) statt fixer Pixelwerte, damit das Layout auf allen Bildschirmgrößen korrekt skaliert.')
   out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px), sanfte Übergänge.')
   if (hasIcons)
     out.push('- Verwende für alle Icons die Lucide-Bibliothek (lucide-react o. ä.) mit exakt den angegebenen Icon-Namen.')

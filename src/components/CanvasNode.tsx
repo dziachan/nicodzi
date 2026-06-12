@@ -62,11 +62,17 @@ export default function CanvasNode({ node, selected, zoom, screenRef }: Props) {
     } else if (node.type === 'lucide') {
       // Icons keep a 1:1 aspect ratio.
       const s = Math.max(MIN, Math.round(d.start.w + Math.max(dx, dy)))
-      updateNode(node.id, { w: s, h: s }, 'none')
+      updateNode(node.id, { w: s, h: s, props: { ...node.props, widthMode: 'fixed', heightMode: 'fixed' } } as any, 'none')
+    } else if (node.type === 'image' && node.props.keepAspect) {
+      // Lock the image aspect ratio while resizing.
+      const ratio = d.start.h / d.start.w || 1
+      const w = Math.max(MIN, Math.round(d.start.w + dx))
+      updateNode(node.id, { w, h: Math.max(MIN, Math.round(w * ratio)), props: { ...node.props, widthMode: 'fixed', heightMode: 'fixed' } } as any, 'none')
     } else {
       const w = Math.max(MIN, Math.round(d.start.w + dx))
       const h = Math.max(MIN, Math.round(d.start.h + dy))
-      updateNode(node.id, { w, h }, 'none')
+      // Manual resize switches sizing back to fixed pixels.
+      updateNode(node.id, { w, h, props: { ...node.props, widthMode: 'fixed', heightMode: 'fixed' } } as any, 'none')
     }
   }
 
