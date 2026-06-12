@@ -166,6 +166,16 @@ body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antial
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
 .modal-title { font-size: 18px; font-weight: 700; }
 .prompt-out { margin: 0; padding: 20px 24px; overflow: auto; font-family: 'SF Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.6; color: #d7d7e0; white-space: pre-wrap; word-break: break-word; flex: 1; }
+
+/* Platform chooser */
+.platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 24px; overflow: auto; }
+.platform-card { text-align: left; background: var(--panel-2); border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: .15s; color: var(--text); }
+.platform-card:hover { border-color: var(--primary); }
+.platform-card.active { border-color: var(--primary); background: linear-gradient(180deg, rgba(99,102,241,.18), transparent); }
+.platform-label { font-weight: 700; font-size: 15px; }
+.platform-sub { font-size: 12px; color: var(--primary-2); font-weight: 600; margin-top: 2px; }
+.platform-bullets { margin: 10px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.platform-bullets li { font-size: 12px; color: var(--muted); line-height: 1.4; }
 .modal-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
 .warnings { margin: 0 24px; margin-top: 16px; background: #2a210f; border: 1px solid #6b5320; border-radius: 10px; padding: 12px 14px; max-height: 200px; overflow: auto; }
 .warnings-title { font-weight: 700; font-size: 13px; color: #fbbf24; margin-bottom: 8px; }

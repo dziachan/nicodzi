@@ -1,5 +1,6 @@
 import { getEdges, getInteraction, nodeLabel, type Interaction } from './interactions'
 import { geometryDesc } from './layout'
+import { PLATFORMS, type PlatformDef, type PlatformId } from './platforms'
 import type { ComponentNode, Project, Screen } from './types'
 
 const screenName = (project: Project, id?: string | null) =>
@@ -13,7 +14,7 @@ function interactionText(it: Interaction, project: Project): string {
 
 const TOUCH_NOTE = ' Umsetzung als Button mit dem beschriebenen Erscheinungsbild, Touch-Target mindestens 44px.'
 
-function describeNode(node: ComponentNode, project: Project, layer: number): string {
+function describeNode(node: ComponentNode, project: Project, layer: number, platform: PlatformDef): string {
   const p = node.props
   const pos = `[${geometryDesc(node)}]`
   const layerInfo = `Ebene ${layer}`
@@ -78,7 +79,7 @@ function describeNode(node: ComponentNode, project: Project, layer: number): str
       return `Liste ${pos} mit Beispiel-Einträgen: ${(p.items ?? []).map((i) => `"${i}"`).join(', ')}.`
     case 'lucide': {
       const color = p.bg ?? project.tokens.text
-      return `Icon "${p.iconName ?? 'house'}" (Lucide) ${pos}, Farbe ${color}, Strichstärke ${p.borderWidth ?? 2}${interInline}.`
+      return `Icon ${platform.translateIcon(p.iconName ?? 'house')} ${pos}, Farbe ${color}, Strichstärke ${p.borderWidth ?? 2}${interInline}.`
     }
     case 'icon':
       return `Icon ${pos}: "${p.icon}"${interInline}.`
@@ -137,7 +138,7 @@ function functionalitySection(inv: Inventory): string[] {
   return lines
 }
 
-function screenSection(screen: Screen, index: number, project: Project): string[] {
+function screenSection(screen: Screen, index: number, project: Project, platform: PlatformDef): string[] {
   const lines = [`### ${index + 1}. Screen: „${screen.name}"`]
   if (screen.background) lines.push(`Hintergrundfarbe dieses Screens: \`${screen.background}\` (überschreibt den globalen Wert).`)
   if (screen.nodes.length === 0) {
@@ -147,19 +148,22 @@ function screenSection(screen: Screen, index: number, project: Project): string[
   // Layer index in the original array: 0 = hinten, höher = weiter vorne.
   const layerOf = new Map(screen.nodes.map((n, i) => [n.id, i]))
   const ordered = [...screen.nodes].sort((a, b) => a.y - b.y)
-  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project, layerOf.get(n.id) ?? 0)}`))
+  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project, layerOf.get(n.id) ?? 0, platform)}`))
   lines.push('')
   return lines
 }
 
-/** Builds the full, AI-ready Markdown build specification. */
-export function generatePrompt(project: Project): string {
+/** Builds the full, AI-ready Markdown build specification for a target platform. */
+export function generatePrompt(project: Project, platformId: PlatformId = 'web'): string {
   const t = project.tokens
   const inv = analyze(project)
+  const platform = PLATFORMS[platformId]
   const out: string[] = []
 
+  out.push(`**${platform.intro}**`)
+  out.push('')
   out.push(
-    'Baue eine vollständige, produktionsreife mobile Web-App exakt nach folgender Spezifikation. ' +
+    `Baue eine vollständige, produktionsreife ${platform.appNoun} exakt nach folgender Spezifikation. ` +
       'Implementiere neben dem UI auch die komplette Funktionalität (nicht nur das Design).',
   )
   out.push('')
@@ -188,9 +192,12 @@ export function generatePrompt(project: Project): string {
 
   out.push('## Screens & Layout')
   out.push('')
-  out.push(`Die App hat ${project.screens.length} Screen(s). Positionsangaben in der Form [vertikal/horizontal].`)
+  out.push(
+    `Die App hat ${project.screens.length} Screen(s). Positionsangaben sind anker-basiert (verankert oben/zentriert/unten · links/zentriert/rechts, Abstände relativ zur Safe Area, flexible Größen). ` +
+      'Übersetze sie in die Layout-Sprache der Zielplattform — KEINE festen Pixel-Koordinaten.',
+  )
   out.push('')
-  project.screens.forEach((s, i) => out.push(...screenSection(s, i, project)))
+  project.screens.forEach((s, i) => out.push(...screenSection(s, i, project, platform)))
 
   // Navigation overview: all screen→screen connections + external actions.
   const edges = getEdges(project)
@@ -214,27 +221,22 @@ export function generatePrompt(project: Project): string {
   out.push('')
 
   const hasMockups = project.screens.some((s) => s.nodes.some((n) => n.type === 'image' && n.props.src))
-  const hasIcons = project.screens.some((s) => s.nodes.some((n) => n.type === 'lucide'))
 
   out.push('## Technische Vorgaben')
   out.push('')
-  out.push('- Saubere, komponentenbasierte Umsetzung; responsives, mobil-zentriertes Layout.')
-  out.push('- Verwende die Design-Tokens als zentrale CSS-Variablen / Theme-Konstanten.')
-  out.push('- **Positioniere alle Elemente anker- und Safe-Area-basiert** (Flexbox/Constraints, KEINE festen Pixel-Koordinaten). Respektiere Notch/Status-Bar oben und Home-Indicator unten (env(safe-area-inset-*)).')
-  out.push('- Verwende die angegebenen flexiblen Größen (px, % der Screen-Maße, Rand-Abstände, automatische Höhe) statt fixer Pixelwerte, damit das Layout auf allen Bildschirmgrößen korrekt skaliert.')
-  out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px), sanfte Übergänge.')
-  if (hasIcons)
-    out.push('- Verwende für alle Icons die Lucide-Bibliothek (lucide-react o. ä.) mit exakt den angegebenen Icon-Namen.')
+  platform.tech.forEach((l) => out.push(`- ${l}`))
+  out.push('- Verwende die Design-Tokens als zentrale Theme-Werte (Farben, Schrift, Radius, Abstände).')
+  out.push('- Übersetze die Anker-/Größen-Angaben in die Layout-Mechanik der Plattform — KEINE festen Pixel-Koordinaten.')
+  out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px).')
   if (hasMockups)
     out.push(
-      '- Hochgeladene UI-Mockups sind verbindliche Design-Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',
+      '- Hochgeladene UI-Mockups sind verbindliche visuelle Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',
     )
   out.push('')
 
-  out.push('## Abschluss')
+  out.push('## Abschluss (Selbstprüfung)')
   out.push('')
-  out.push('- Teste, dass der Build fehlerfrei durchläuft.')
-  out.push('- Merge das Ergebnis in den main-Branch.')
+  platform.checklist.forEach((l) => out.push(`- ${l}`))
 
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
 }
