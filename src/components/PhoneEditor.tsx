@@ -76,7 +76,7 @@ export default function PhoneEditor() {
 
             {screen.nodes.length === 0 && (
               <div className="screen-empty" style={{ color: `${tokens.text}88` }}>
-                Komponente per Klick hinzufügen<br />oder hierher ziehen
+✦<br />Noch ganz leer hier.<br />Schnapp dir links eine Komponente<br />oder zieh ein Bild rein.
               </div>
             )}
             {screen.nodes.map((n) => (

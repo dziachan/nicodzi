@@ -10,6 +10,11 @@ export interface PlatformDef {
   tech: string[]
   translateIcon: (lucideId: string) => string
   checklist: string[]
+  /** Where the user should drop the missing graphics. */
+  assetDir: string
+  /** True when icons must be supplied as image files (no built-in icon set). */
+  needsIconFiles: boolean
+  fontNote: string
 }
 
 // Lucide id → SF Symbols name (common subset; falls back to the raw id).
@@ -55,6 +60,9 @@ export const PLATFORMS: Record<PlatformId, PlatformDef> = {
       'Prüfe das Layout auf mehreren Bildschirmgrößen.',
       'Merge das Ergebnis in den main-Branch.',
     ],
+    assetDir: 'public/assets/',
+    needsIconFiles: false,
+    fontNote: 'Die Schriftart kann als Webfont (Google Fonts) eingebunden werden — keine Datei nötig.',
   },
   ios: {
     id: 'ios',
@@ -76,6 +84,9 @@ export const PLATFORMS: Record<PlatformId, PlatformDef> = {
       'Prüfe das Safe-Area-Verhalten auf Geräten mit Notch und Home-Indicator.',
       'Merge das Ergebnis in den main-Branch.',
     ],
+    assetDir: 'Assets.xcassets/ (je Grafik ein Image Set)',
+    needsIconFiles: false,
+    fontNote: 'Eine benutzerdefinierte Schrift muss als .ttf/.otf ins Projekt und in die Info.plist (UIAppFonts) eingetragen werden.',
   },
   godot: {
     id: 'godot',
@@ -98,6 +109,9 @@ export const PLATFORMS: Record<PlatformId, PlatformDef> = {
       'Prüfe Anker/Container auf verschiedenen Auflösungen.',
       'Merge das Ergebnis in den main-Branch.',
     ],
+    assetDir: 'res://assets/',
+    needsIconFiles: true,
+    fontNote: 'Die Schriftart muss als .ttf/.otf in res://fonts/ liegen und als Theme-Font gesetzt werden.',
   },
   unity: {
     id: 'unity',
@@ -120,6 +134,9 @@ export const PLATFORMS: Record<PlatformId, PlatformDef> = {
       'Prüfe die RectTransform-Anchors auf verschiedenen Auflösungen (Canvas Scaler).',
       'Merge das Ergebnis in den main-Branch.',
     ],
+    assetDir: 'Assets/Art/ (Import-Typ: Sprite (2D and UI))',
+    needsIconFiles: true,
+    fontNote: 'Die Schriftart muss als .ttf importiert und ein TextMeshPro-Font-Asset daraus erzeugt werden.',
   },
 }
 
