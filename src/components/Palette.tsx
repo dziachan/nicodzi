@@ -41,8 +41,8 @@ export default function Palette() {
 
   return (
     <aside className="panel left">
-      <div className="panel-title">Komponenten</div>
-      <div className="hint">Klicken zum Hinzufügen oder auf den Screen ziehen.</div>
+      <div className="panel-title">✦ Bausteine</div>
+      <div className="hint">Klick drauf oder zieh sie rüber auf den Screen.</div>
       {groups.map((g) => (
         <div key={g.title} className="palette-group">
           <div className="group-label">{g.title}</div>
