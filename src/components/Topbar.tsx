@@ -17,7 +17,7 @@ export default function Topbar({ onExport }: { onExport: () => void }) {
         <span className="logo">◳</span>
         <div>
           <div className="brand-name">Phorge</div>
-          <div className="brand-sub">Design → Build-Prompt</div>
+          <div className="brand-sub">bau dein App-Design ✦ hol dir den Prompt</div>
         </div>
       </div>
 
