@@ -1,6 +1,7 @@
 import { getEdges, getInteraction, nodeLabel, type Interaction } from './interactions'
 import { geometryDesc } from './layout'
 import { PLATFORMS, type PlatformDef, type PlatformId } from './platforms'
+import { collectAssets, fontAsset } from './assets'
 import type { ComponentNode, Project, Screen } from './types'
 
 const screenName = (project: Project, id?: string | null) =>
@@ -14,7 +15,7 @@ function interactionText(it: Interaction, project: Project): string {
 
 const TOUCH_NOTE = ' Umsetzung als Button mit dem beschriebenen Erscheinungsbild, Touch-Target mindestens 44px.'
 
-function describeNode(node: ComponentNode, project: Project, layer: number, platform: PlatformDef): string {
+function describeNode(node: ComponentNode, project: Project, layer: number, platform: PlatformDef, assetFile?: string): string {
   const p = node.props
   const pos = `[${geometryDesc(node)}]`
   const layerInfo = `Ebene ${layer}`
@@ -60,16 +61,18 @@ function describeNode(node: ComponentNode, project: Project, layer: number, plat
     case 'image': {
       const desc = p.description?.trim()
       const ocr = p.ocrText?.trim()
+      const fileRef = assetFile ? ` **Asset-Datei: \`${platform.assetDir}${assetFile}\`** (liegt dir noch nicht vor, siehe Schritt 0).` : ''
       let base: string
       if (ocr) {
         base =
-          `Vom Nutzer hochgeladenes UI-Mockup ${pos} — verwende es als visuelle Vorlage und baue das gezeigte UI nach.` +
+          `Grafik ${pos} — verwende sie als visuelle Vorlage und baue das gezeigte UI nach.` +
           (desc ? ` Inhalt: ${desc}.` : '') +
+          fileRef +
           `\n\nIm Bild erkannter Text/Inhalt:\n\n\`\`\`\n${ocr}\n\`\`\``
       } else if (desc) {
-        base = `Bild-Platzhalter ${pos} — zeigt: ${desc}.`
+        base = `Grafik ${pos} — zeigt: ${desc}.${fileRef}`
       } else {
-        base = `Bild-Platzhalter ${pos} (Bild vom Nutzer; Inhalt nicht näher beschrieben).`
+        base = `Grafik ${pos} (Inhalt nicht näher beschrieben).${fileRef}`
       }
       return base + interNote
     }
@@ -138,7 +141,7 @@ function functionalitySection(inv: Inventory): string[] {
   return lines
 }
 
-function screenSection(screen: Screen, index: number, project: Project, platform: PlatformDef): string[] {
+function screenSection(screen: Screen, index: number, project: Project, platform: PlatformDef, assetOf: Map<string, string>): string[] {
   const lines = [`### ${index + 1}. Screen: „${screen.name}"`]
   if (screen.background) lines.push(`Hintergrundfarbe dieses Screens: \`${screen.background}\` (überschreibt den globalen Wert).`)
   if (screen.nodes.length === 0) {
@@ -148,7 +151,7 @@ function screenSection(screen: Screen, index: number, project: Project, platform
   // Layer index in the original array: 0 = hinten, höher = weiter vorne.
   const layerOf = new Map(screen.nodes.map((n, i) => [n.id, i]))
   const ordered = [...screen.nodes].sort((a, b) => a.y - b.y)
-  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project, layerOf.get(n.id) ?? 0, platform)}`))
+  ordered.forEach((n, i) => lines.push(`${i + 1}. ${describeNode(n, project, layerOf.get(n.id) ?? 0, platform, assetOf.get(n.id))}`))
   lines.push('')
   return lines
 }
@@ -168,6 +171,48 @@ export function generatePrompt(project: Project, platformId: PlatformId = 'web')
   )
   out.push('')
   out.push(`# App: ${project.appName}`)
+  out.push('')
+
+  // ---- Step 0: assets the assistant does NOT have ----
+  const assets = collectAssets(project, platform.needsIconFiles)
+  const font = fontAsset(project)
+  out.push('## ⚠️ SCHRITT 0 — Fehlende Assets anfordern (VOR dem Programmieren)')
+  out.push('')
+  out.push(
+    'Dieses Design wurde in einem visuellen Editor gebaut. **Die verwendeten Grafiken liegen dir NICHT vor** — ' +
+      'du kannst sie weder sehen noch selbst erzeugen. Beginne deshalb NICHT sofort mit dem Code, sondern:',
+  )
+  out.push('')
+  out.push(`1. **Gib zuerst die untenstehende Liste aus** und bitte mich, genau diese Dateien in \`${platform.assetDir}\` abzulegen.`)
+  out.push('2. **Warte meine Rückmeldung ab**, ob die Dateien vorhanden sind.')
+  out.push(
+    '3. **Baue trotzdem lauffähig weiter:** Verwende für noch fehlende Dateien sichtbare Platzhalter (farbige Fläche mit dem Dateinamen als Beschriftung), ' +
+      'damit die App auch ohne die Assets startet und nicht abstürzt.',
+  )
+  out.push('4. **Referenziere die Dateien exakt unter den angegebenen Namen/Pfaden**, damit sie nach dem Einfügen sofort funktionieren.')
+  out.push('')
+
+  if (assets.length > 0) {
+    out.push(`### Benötigte Dateien (${assets.length})`)
+    out.push('')
+    out.push('| Datei | Verwendung | Größe (Richtwert) | Inhalt |')
+    out.push('| --- | --- | --- | --- |')
+    assets.forEach((a) => out.push(`| \`${platform.assetDir}${a.file}\` | ${a.usage} | ${a.size} | ${a.content} |`))
+    out.push('')
+  } else {
+    out.push('### Benötigte Dateien')
+    out.push('')
+    out.push('- Aktuell werden **keine eigenen Bild-Assets** verwendet — alles ist mit Code/Formen/Icons umsetzbar.')
+    out.push('')
+  }
+
+  if (font) {
+    out.push(`- **Schriftart „${font}":** ${platform.fontNote}`)
+    out.push('')
+  }
+  out.push(
+    '> Wenn du eine dieser Dateien nicht vorfindest, sage mir **explizit welche fehlt** — rate nicht und ersetze sie nicht stillschweigend durch etwas anderes.',
+  )
   out.push('')
 
   if (project.appDescription.trim()) {
@@ -197,7 +242,8 @@ export function generatePrompt(project: Project, platformId: PlatformId = 'web')
       'Übersetze sie in die Layout-Sprache der Zielplattform — KEINE festen Pixel-Koordinaten.',
   )
   out.push('')
-  project.screens.forEach((s, i) => out.push(...screenSection(s, i, project, platform)))
+  const assetOf = new Map(assets.filter((a) => a.nodeId).map((a) => [a.nodeId as string, a.file]))
+  project.screens.forEach((s, i) => out.push(...screenSection(s, i, project, platform, assetOf)))
 
   // Navigation overview: all screen→screen connections + external actions.
   const edges = getEdges(project)
@@ -230,12 +276,14 @@ export function generatePrompt(project: Project, platformId: PlatformId = 'web')
   out.push('- Gute Lesbarkeit, ausreichende Touch-Targets (≥ 44px).')
   if (hasMockups)
     out.push(
-      '- Hochgeladene UI-Mockups sind verbindliche visuelle Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',
+      '- Hochgeladene Grafiken/Mockups sind verbindliche visuelle Vorlagen: Setze Layout, Texte und Stil aus dem jeweiligen Bild möglichst exakt um (der per OCR erkannte Text ist oben angegeben).',
     )
   out.push('')
 
   out.push('## Abschluss (Selbstprüfung)')
   out.push('')
+  if (assets.length > 0)
+    out.push('- Habe ich zu Beginn die fehlenden Asset-Dateien angefordert und alle Pfade exakt so referenziert?')
   platform.checklist.forEach((l) => out.push(`- ${l}`))
 
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n'
