@@ -18,6 +18,14 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+# macOS-Python von python.org hat oft keine Zertifikate -> mitgeliefertes certifi nutzen
+try:
+    import certifi
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+except ImportError:
+    pass
+
 try:
     import yt_dlp
 except ImportError:
@@ -107,6 +115,8 @@ def download_one(url: str, out_dir: str, quality, audio: bool, playlist: bool, r
         msg = str(e).replace("ERROR: ", "").splitlines()[0]
         if "Unable to connect to proxy" in msg or "Failed to resolve" in msg or "getaddrinfo" in msg:
             msg = "Keine Verbindung zu YouTube"
+        elif "CERTIFICATE_VERIFY_FAILED" in msg:
+            msg = "Zertifikatsfehler – 'Install Certificates.command' im Python-Ordner starten"
         elif "not a bot" in msg:
             msg = "YouTube blockt (Bot-Schutz) – später erneut versuchen"
         elif "Private video" in msg or "Sign in" in msg:
