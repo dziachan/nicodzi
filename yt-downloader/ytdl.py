@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import os
 import queue
+import shutil
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -31,6 +32,8 @@ QUALITIES = {
     "480p": 480,
 }
 DEFAULT_DIR = str(Path.home() / "Downloads" / "YouTube")
+HAS_FFMPEG = shutil.which("ffmpeg") is not None
+ERRORS: dict[str, str] = {}  # url -> vollständige Fehlermeldung
 
 
 class _QuietLogger:
@@ -54,13 +57,17 @@ def build_opts(out_dir: str, quality: int | None, audio: bool, hook, playlist: b
         "restrictfilenames": False,
         "windowsfilenames": True,
     }
+    h = f"[height<={quality}]" if quality else ""
+    if not HAS_FFMPEG:
+        # Ohne ffmpeg: nur Dateien laden, die Bild+Ton schon zusammen enthalten (meist max. 720p)
+        opts["format"] = "bestaudio[ext=m4a]/bestaudio" if audio else f"best{h}[ext=mp4]/best{h}/best"
+        return opts
     if audio:
         opts["format"] = "bestaudio/best"
         opts["postprocessors"] = [
             {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}
         ]
     else:
-        h = f"[height<={quality}]" if quality else ""
         # MP4 bevorzugen (läuft überall, auch auf iPhone/Mac), sonst bestes Format
         opts["format"] = (
             f"bestvideo{h}[ext=mp4]+bestaudio[ext=m4a]/"
@@ -96,9 +103,12 @@ def download_one(url: str, out_dir: str, quality, audio: bool, playlist: bool, r
         report(url, "fertig ✓", 100, state["title"])
         return True
     except Exception as e:  # noqa: BLE001
+        ERRORS[url] = str(e)
         msg = str(e).replace("ERROR: ", "").splitlines()[0]
         if "Unable to connect to proxy" in msg or "Failed to resolve" in msg or "getaddrinfo" in msg:
             msg = "Keine Verbindung zu YouTube"
+        elif "not a bot" in msg:
+            msg = "YouTube blockt (Bot-Schutz) – später erneut versuchen"
         elif "Private video" in msg or "Sign in" in msg:
             msg = "Video privat / Anmeldung nötig"
         elif "unavailable" in msg.lower():
@@ -217,7 +227,22 @@ def run_gui() -> None:
         tree.heading(col, text=label)
         tree.column(col, width=w, anchor="w" if col != "pct" else "e", stretch=(col == "title"))
     tree.pack(fill="both", expand=True)
-    status_lbl = ttk.Label(frm, text="Bereit.")
+    url_of: dict[str, str] = {}
+
+    def show_error(_e=None):
+        sel = tree.selection()
+        if sel and url_of.get(sel[0]) in ERRORS:
+            win = tk.Toplevel(root)
+            win.title("Fehlerdetails")
+            t = tk.Text(win, width=90, height=14, wrap="word")
+            t.insert("1.0", ERRORS[url_of[sel[0]]])
+            t.pack(fill="both", expand=True, padx=8, pady=8)
+            ttk.Button(win, text="Kopieren", command=lambda: (root.clipboard_clear(),
+                       root.clipboard_append(ERRORS[url_of[sel[0]]]))).pack(pady=(0, 8))
+
+    tree.bind("<Double-1>", show_error)
+    status_lbl = ttk.Label(frm, text="Bereit." + ("" if HAS_FFMPEG else
+                           "  (ffmpeg fehlt → max. ca. 720p, Audio als M4A statt MP3)"))
     status_lbl.pack(anchor="w", pady=(6, 0))
 
     def report(url, status, pct, title):
@@ -246,6 +271,7 @@ def run_gui() -> None:
         rows.clear()
         for u in urls:
             rows[u] = tree.insert("", "end", values=(u, "0", "wartet…"))
+            url_of[rows[u]] = u
         start_btn.config(state="disabled")
         status_lbl.config(text=f"Lade {len(urls)} Link(s)…")
         out, quality = out_var.get(), QUALITIES.get(q_var.get())
@@ -254,7 +280,8 @@ def run_gui() -> None:
         def worker():
             with ThreadPoolExecutor(max_workers=jobs) as ex:
                 res = list(ex.map(lambda u: download_one(u, out, quality, audio, playlist, report), urls))
-            events.put(("__done__", f"Fertig: {sum(res)}/{len(urls)} erfolgreich – gespeichert in {out}", 0, ""))
+            hint = "  (Doppelklick auf eine Zeile zeigt den Fehler)" if sum(res) < len(urls) else ""
+            events.put(("__done__", f"Fertig: {sum(res)}/{len(urls)} erfolgreich – gespeichert in {out}{hint}", 0, ""))
 
         threading.Thread(target=worker, daemon=True).start()
 
